@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Cohort Retention Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #f4f6f4;
+        --surface: #ffffff;
+        --surface-2: #edf1ee;
+        --ink: #17211c;
+        --ink-2: #43534b;
+        --muted: #71807a;
+        --line: #dde4df;
+        --line-strong: #c6d2ca;
+        --teal: #0d7a5c;
+        --teal-deep: #0a5f47;
+        --teal-soft: #e2f1ec;
+        --rust: #b04a2c;
+        --amber: #b96f00;
+        --amber-soft: #faf0dd;
+        --good: #0d7a5c;
+        --bad: #b3402a;
+        --shadow: 0 1px 2px rgba(23, 33, 28, .05), 0 8px 24px -12px rgba(23, 33, 28, .12);
+        --radius: 10px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1512;
+          --surface: #171f1a;
+          --surface-2: #1f2923;
+          --ink: #e9efeb;
+          --ink-2: #bccac1;
+          --muted: #8ba296;
+          --line: #2a362f;
+          --line-strong: #3a4a40;
+          --teal: #3ec79f;
+          --teal-deep: #7adbbd;
+          --teal-soft: #17352b;
+          --rust: #e08a6d;
+          --amber: #e0a34a;
+          --amber-soft: #33270f;
+          --good: #3ec79f;
+          --bad: #e08a6d;
+          --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+        }
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      .mono { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace; font-variant-numeric: tabular-nums; }
+      .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 64px; }
+      a { color: var(--teal); }
+
+      /* ---------- header ---------- */
+      header.top { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; justify-content: space-between; margin-bottom: 6px; }
+      h1 { font-size: 30px; line-height: 1.15; margin: 0 0 8px; font-weight: 700; letter-spacing: -.01em; }
+      .lede { margin: 0; color: var(--ink-2); max-width: 640px; font-size: 15.5px; }
+      .byline { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+      .byline strong { color: var(--ink-2); font-weight: 600; }
+      .dataset-badge {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: var(--surface); border: 1px solid var(--line);
+        border-radius: 999px; padding: 7px 14px; font-size: 13px; color: var(--ink-2);
+        box-shadow: var(--shadow); white-space: nowrap;
+      }
+      .dataset-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); flex: none; }
+      .dataset-badge strong { color: var(--ink); font-weight: 600; }
+
+      /* ---------- toolbar ---------- */
+      .toolbar {
+        margin-top: 20px; background: var(--surface); border: 1px solid var(--line);
+        border-radius: var(--radius); box-shadow: var(--shadow);
+        padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; justify-content: space-between;
+      }
+      .tool-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .tool-label { font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
+      button, .file-btn {
+        font: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer;
+        border-radius: 7px; border: 1px solid var(--line-strong);
+        background: var(--surface); color: var(--ink); padding: 8px 13px;
+        display: inline-flex; align-items: center; gap: 7px; line-height: 1.2;
+      }
+      button:hover, .file-btn:hover { border-color: var(--teal); color: var(--teal-deep); }
+      button.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
+      button.primary:hover { background: var(--teal-deep); color: #fff; }
+      @media (prefers-color-scheme: dark) { button.primary { color: #0b1512; } button.primary:hover { color: #0b1512; } }
+      button svg, .file-btn svg { width: 15px; height: 15px; flex: none; }
+      .segmented { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 7px; overflow: hidden; }
+      .segmented button { border: 0; border-radius: 0; padding: 8px 12px; background: transparent; color: var(--ink-2); }
+      .segmented button + button { border-left: 1px solid var(--line); }
+      .segmented button[aria-pressed="true"] { background: var(--teal); color: #fff; font-weight: 600; }
+      @media (prefers-color-scheme: dark) { .segmented button[aria-pressed="true"] { color: #0b1512; } }
+      .check { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--ink-2); cursor: pointer; user-select: none; }
+      .check input { accent-color: var(--teal); width: 15px; height: 15px; margin: 0; }
+      .upload-msg { font-size: 13px; margin-top: 10px; display: none; padding: 9px 12px; border-radius: 7px; }
+      .upload-msg.err { display: block; background: #fbeae5; color: #8c2f1a; border: 1px solid #efc4b8; }
+      .upload-msg.ok { display: block; background: var(--teal-soft); color: var(--teal-deep); border: 1px solid var(--line-strong); }
+      @media (prefers-color-scheme: dark) { .upload-msg.err { background: #3a1d13; color: #f0b39e; border-color: #5d3222; } }
+
+      /* ---------- KPI cards ---------- */
+      .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 16px; }
+      .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px 12px; min-width: 0; }
+      .kpi .k-label { font-size: 11.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+      .kpi .k-value { font-size: 26px; font-weight: 600; line-height: 1.1; letter-spacing: -.01em; }
+      .kpi .k-sub { font-size: 12.5px; color: var(--ink-2); margin-top: 4px; }
+      .kpi .k-sub .up { color: var(--good); font-weight: 600; }
+      .kpi .k-sub .down { color: var(--bad); font-weight: 600; }
+
+      /* ---------- insights ---------- */
+      .insights { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+      .insight { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--teal); border-radius: var(--radius); box-shadow: var(--shadow); padding: 13px 16px; }
+      .insight.warn { border-top-color: var(--amber); }
+      .insight .i-title { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+      .insight p { margin: 0; font-size: 14px; color: var(--ink); }
+      .insight p b { font-weight: 600; }
+
+      /* ---------- sections ---------- */
+      section.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); margin-top: 16px; padding: 18px 20px 20px; }
+      .panel-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+      .panel-head h2 { font-size: 17px; margin: 0; font-weight: 600; letter-spacing: -.005em; }
+      .panel-head .hint { font-size: 13px; color: var(--muted); margin: 0; }
+      .panel-sub { font-size: 13.5px; color: var(--ink-2); margin: 2px 0 12px; max-width: 760px; }
+
+      /* ---------- heatmap ---------- */
+      .heat-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+      table.heat { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 760px; font-size: 13px; }
+      table.heat th, table.heat td { padding: 7px 6px; text-align: center; white-space: nowrap; }
+      table.heat thead th { background: var(--surface-2); color: var(--ink-2); font-size: 11.5px; font-weight: 600; letter-spacing: .04em; border-bottom: 1px solid var(--line); position: sticky; top: 0; }
+      table.heat th.rowhead, table.heat td.rowhead {
+        text-align: left; position: sticky; left: 0; z-index: 2;
+        background: var(--surface); border-right: 1px solid var(--line-strong);
+        padding-left: 12px; padding-right: 10px; min-width: 148px;
+      }
+      table.heat thead th.rowhead { background: var(--surface-2); z-index: 3; }
+      table.heat tbody tr { cursor: pointer; }
+      table.heat tbody tr:hover td.rowhead { background: var(--teal-soft); }
+      table.heat tbody tr.selected td.rowhead { background: var(--teal-soft); box-shadow: inset 3px 0 0 var(--teal); }
+      table.heat td.cell { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); min-width: 52px; }
+      table.heat td.empty { background: transparent; color: transparent; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, var(--surface-2) 5px, var(--surface-2) 6px); }
+      table.heat tr.avg-row td { font-weight: 600; border-top: 2px solid var(--line-strong); background: var(--surface-2); }
+      table.heat tr.avg-row td.rowhead { background: var(--surface-2); }
+      table.heat tr.avg-row td.cell { background: var(--surface-2); }
+      .rowhead .cohort-name { font-weight: 600; font-size: 13.5px; }
+      .rowhead .cohort-size { color: var(--muted); font-size: 12px; margin-left: 6px; }
+      .legend { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
+      .legend .scale { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+      .legend .scale span { width: 26px; height: 12px; display: block; }
+
+      /* ---------- chart ---------- */
+      .chart-wrap { position: relative; }
+      svg.chart { width: 100%; height: auto; display: block; }
+      .chart-tip {
+        position: absolute; pointer-events: none; display: none; z-index: 5;
+        background: var(--ink); color: var(--bg); border-radius: 6px; padding: 6px 9px;
+        font-size: 12px; line-height: 1.45; white-space: nowrap; box-shadow: var(--shadow);
+      }
+      .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+      .chip {
+        font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line-strong);
+        background: var(--surface); color: var(--ink-2); display: inline-flex; align-items: center; gap: 7px;
+      }
+      .chip .swatch { width: 14px; height: 3px; border-radius: 2px; flex: none; }
+      .chip[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); font-weight: 600; background: var(--surface-2); }
+      .chip.dim { opacity: .45; }
+
+      /* ---------- cohort table ---------- */
+      .table-scroll { overflow-x: auto; }
+      table.data { border-collapse: collapse; width: 100%; min-width: 680px; font-size: 13.5px; }
+      table.data th, table.data td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+      table.data th:first-child, table.data td:first-child { text-align: left; }
+      table.data thead th { font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line-strong); }
+      table.data th.sortable { cursor: pointer; user-select: none; }
+      table.data th.sortable:hover { color: var(--teal-deep); }
+      table.data th .arrow { font-size: 10px; margin-left: 3px; }
+      table.data tbody tr:hover { background: var(--surface-2); }
+      table.data td.num { font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+      .bar-cell { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; }
+      .bar-track { width: 56px; height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; flex: none; }
+      .bar-fill { height: 100%; background: var(--teal); border-radius: 3px; }
+
+      /* ---------- docs ---------- */
+      .docs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+      .docs-grid h3 { font-size: 14px; margin: 0 0 8px; font-weight: 600; }
+      .docs-grid p, .docs-grid li { font-size: 13.5px; color: var(--ink-2); }
+      .docs-grid ul { margin: 0; padding-left: 18px; }
+      .docs-grid li { margin-bottom: 4px; }
+      .docs-grid p { margin: 0 0 8px; }
+      code { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+      pre.sample {
+        font-family: "IBM Plex Mono", monospace; font-size: 12px; line-height: 1.55;
+        background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px;
+        padding: 12px 14px; overflow-x: auto; margin: 0; color: var(--ink);
+      }
+      footer.note { margin-top: 22px; font-size: 12.5px; color: var(--muted); text-align: center; }
+
+      @media (max-width: 1020px) {
+        .kpis { grid-template-columns: repeat(3, 1fr); }
+        .insights { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 640px) {
+        .wrap { padding: 20px 14px 48px; }
+        h1 { font-size: 25px; }
+        .kpis { grid-template-columns: repeat(2, 1fr); }
+        .kpi .k-value { font-size: 22px; }
+        .docs-grid { grid-template-columns: 1fr; }
+        section.panel { padding: 15px 14px 17px; }
+        header.top { align-items: flex-start; flex-direction: column; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+
+      <header class="top">
+        <div>
+          <h1>Cohort Retention Analyzer</h1>
+          <p class="lede">Group users by the month they signed up, then watch each cohort come back — or quietly disappear. Read the heatmap to spot your leakiest month, compare curves to see whether newer cohorts stick better, and export the full matrix for your deck.</p>
+          <p class="byline">Designed &amp; built by <strong>Fan (David) Xu</strong></p>
+        </div>
+        <div class="dataset-badge" id="datasetBadge"><span class="dot"></span><span>Dataset: <strong id="datasetName">Sample data</strong> · <span id="datasetMeta"></span></span></div>
+      </header>
+
+      <div class="toolbar" role="region" aria-label="Data and view controls">
+        <div class="tool-group">
+          <span class="tool-label">Data</span>
+          <label class="file-btn" for="csvFile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+            Upload CSV
+          </label>
+          <input type="file" id="csvFile" accept=".csv,text/csv" hidden />
+          <button type="button" id="btnTemplate">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+            Download template
+          </button>
+          <button type="button" id="btnExport" class="primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+            Export matrix
+          </button>
+          <button type="button" id="btnReset">Reset sample</button>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label">Cells</span>
+          <div class="segmented" role="group" aria-label="Cell values">
+            <button type="button" id="segPct" aria-pressed="true">Retention %</button>
+            <button type="button" id="segUsers" aria-pressed="false">Active users</button>
+            <button type="button" id="segChurn" aria-pressed="false">Churn %</button>
+          </div>
+          <label class="check"><input type="checkbox" id="chkAvg" checked /> Weighted average row</label>
+        </div>
+      </div>
+      <div class="upload-msg" id="uploadMsg" role="status"></div>
+
+      <div class="kpis" id="kpis"></div>
+      <div class="insights" id="insights"></div>
+
+      <section class="panel" aria-labelledby="heatTitle">
+        <div class="panel-head">
+          <h2 id="heatTitle">Retention heatmap</h2>
+          <p class="hint">Click a cohort row to isolate its curve below</p>
+        </div>
+        <p class="panel-sub">Each row is one signup cohort. Columns are months since signup (M0 is the signup month itself, always 100%). Darker cells retain more users. Hatched cells mean the cohort is not that old yet.</p>
+        <div class="heat-scroll"><table class="heat" id="heatTable"></table></div>
+        <div class="legend" id="heatLegend"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="curveTitle">
+        <div class="panel-head">
+          <h2 id="curveTitle">Retention curves</h2>
+          <p class="hint">Dashed line = size-weighted average across cohorts</p>
+        </div>
+        <p class="panel-sub">Healthy products flatten out: after the early drop, a loyal core stays. A curve that keeps sliding toward zero means every cohort eventually churns out completely.</p>
+        <div class="chart-wrap">
+          <svg class="chart" id="curveChart" viewBox="0 0 880 360" role="img" aria-label="Line chart of retention by months since signup for each cohort"></svg>
+          <div class="chart-tip" id="chartTip"></div>
+        </div>
+        <div class="chips" id="cohortChips"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="tableTitle">
+        <div class="panel-head">
+          <h2 id="tableTitle">Cohort scorecard</h2>
+          <p class="hint">Click a column header to sort</p>
+        </div>
+        <p class="panel-sub">Milestone retention per cohort. <b>Expected active months</b> sums the retention curve — roughly how many of their first 12 months a typical user in that cohort is active. It is the single best one-number summary of cohort quality.</p>
+        <div class="table-scroll"><table class="data" id="scoreTable"></table></div>
+      </section>
+
+      <section class="panel" aria-labelledby="docsTitle">
+        <div class="panel-head"><h2 id="docsTitle">Using your own data</h2></div>
+        <div class="docs-grid">
+          <div>
+            <h3>CSV format — one row per cohort per month</h3>
+            <p>Three columns are all you need. Download the template to see it filled in.</p>
+            <ul>
+              <li><code>cohort_month</code> — signup month, <code>YYYY-MM</code> (e.g. <code>2025-03</code>)</li>
+              <li><code>months_since_signup</code> — 0 for the signup month, 1 for the month after, and so on</li>
+              <li><code>active_users</code> — how many of that cohort were active in that month</li>
+            </ul>
+            <p style="margin-top:10px">A wide layout works too: <code>cohort_month, cohort_size, m0, m1, m2, …</code> with active-user counts across the row. Either way, the month-0 count defines the cohort size, and every later month is divided by it.</p>
+            <h3 style="margin-top:16px">How to build this from raw events</h3>
+            <p>In SQL or a spreadsheet: take each user's first-seen month as their cohort, then for every later month count distinct users from that cohort who show any activity. One row per cohort × month is the whole input.</p>
+          </div>
+          <div>
+            <h3>Template preview</h3>
+            <pre class="sample">cohort_month,months_since_signup,active_users
+2025-01,0,1240
+2025-01,1,806
+2025-01,2,682
+2025-02,0,1315
+2025-02,1,881
+…</pre>
+            <h3 style="margin-top:16px">Reading the results</h3>
+            <ul>
+              <li><b>Read down a column</b> to compare cohorts at the same age — is retention improving over time?</li>
+              <li><b>Read across a row</b> to see one cohort age — where is the steepest drop?</li>
+              <li><b>Read the diagonals</b> to spot calendar effects: a bad product month hurts every cohort at once.</li>
+              <li>Young cohorts have short rows. Never compare a 2-month-old cohort's M6 against a mature one — it doesn't exist yet.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <footer class="note">Retention = active users in month N ÷ cohort size (month 0). Averages are weighted by cohort size. Everything runs in your browser — uploaded files never leave this page.</footer>
+    </div>
+
+    <script>
+    "use strict";
+
+    /* ================= Sample data =================
+       18 monthly cohorts, Jan 2024 – Jun 2025. Each cohort's retention curve is
+       generated from a decay model with a per-cohort quality factor, then
+       converted to active-user counts. Later cohorts retain slightly better:
+       quality rises over time, which the insights call out. */
+    var SAMPLE_END = { y: 2025, m: 6 }; /* last observed month */
+    var MAX_PERIOD = 12;                /* show M0..M12 at most */
+
+    function monthLabel(y, m) {
+      var names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return names[m - 1] + " " + y;
+    }
+    function monthKey(y, m) { return y + "-" + (m < 10 ? "0" + m : "" + m); }
+
+    function buildSample() {
+      /* size: signups that month; quality: multiplier on the decay floor */
+      var defs = [
+        [2024, 1, 842, 0.92], [2024, 2, 798, 0.90], [2024, 3, 915, 0.95],
+        [2024, 4, 968, 0.94], [2024, 5, 1042, 0.97], [2024, 6, 1105, 0.96],
+        [2024, 7, 1078, 0.93], [2024, 8, 1130, 0.98], [2024, 9, 1216, 1.00],
+        [2024, 10, 1289, 1.01], [2024, 11, 1354, 0.99], [2024, 12, 1298, 1.02],
+        [2025, 1, 1422, 1.04], [2025, 2, 1387, 1.03], [2025, 3, 1506, 1.06],
+        [2025, 4, 1581, 1.05], [2025, 5, 1664, 1.08], [2025, 6, 1739, 1.07]
+      ];
+      return defs.map(function (d, idx) {
+        var y = d[0], m = d[1], size = d[2], q = d[3];
+        var ageMonths = (SAMPLE_END.y - y) * 12 + (SAMPLE_END.m - m);
+        var periods = Math.min(MAX_PERIOD, ageMonths) + 1;
+        /* deterministic per-cohort wobble so curves are not perfectly smooth */
+        var wobbleSeed = (idx * 37 + 11) % 7;
+        var retained = [];
+        for (var p = 0; p < periods; p++) {
+          if (p === 0) { retained.push(size); continue; }
+          var floor = 0.16 * q;                       /* loyal core */
+          var k = 0.42 - 0.05 * (q - 0.9);            /* decay speed */
+          var r = floor + (1 - floor) * Math.exp(-k * p);
+          var wob = 1 + 0.012 * Math.sin(p * 1.7 + wobbleSeed);
+          /* small seasonal dip every December-ish period for realism */
+          if ((m - 1 + p) % 12 === 0 && p > 0) wob *= 0.985;
+          retained.push(Math.max(1, Math.round(size * r * wob)));
+        }
+        return { key: monthKey(y, m), label: monthLabel(y, m), size: size, retained: retained };
+      });
+    }
+
+    /* ================= State ================= */
+    var state = {
+      cohorts: buildSample(),
+      sourceName: "Sample data",
+      mode: "pct",          /* pct | users | churn */
+      showAvg: true,
+      selected: null,       /* cohort key isolated in chart, or null */
+      sortKey: "cohort",
+      sortDir: 1
+    };
+
+    var $ = function (id) { return document.getElementById(id); };
+    var darkMode = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+    function fmtInt(n) { return n.toLocaleString("en-US"); }
+    function fmtPct(x, dp) { return (x * 100).toFixed(dp == null ? 1 : dp) + "%"; }
+    function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+    /* ================= Derived data ================= */
+    function maxPeriods() {
+      var mx = 0;
+      state.cohorts.forEach(function (c) { mx = Math.max(mx, c.retained.length); });
+      return mx;
+    }
+    function retentionAt(c, p) {
+      if (p >= c.retained.length || !c.size) return null;
+      return c.retained[p] / c.size;
+    }
+    /* size-weighted average retention at period p, over cohorts old enough */
+    function avgRetention(p) {
+      var num = 0, den = 0;
+      state.cohorts.forEach(function (c) {
+        if (p < c.retained.length) { num += c.retained[p]; den += c.size; }
+      });
+      return den ? num / den : null;
+    }
+    function avgRetentionRaw(p) {
+      var num = 0, den = 0;
+      state.cohorts.forEach(function (c) {
+        if (p < c.retained.length) { num += c.retained[p]; den += c.size; }
+      });
+      return den ? { users: num, base: den } : null;
+    }
+    function milestoneAvg(p) { return avgRetention(p); }
+    function expectedMonths(c) {
+      var s = 0;
+      for (var p = 0; p < c.retained.length; p++) s += c.retained[p] / c.size;
+      return s;
+    }
+    function totalUsers() { return state.cohorts.reduce(function (s, c) { return s + c.size; }, 0); }
+
+    /* ================= KPIs ================= */
+    function renderKpis() {
+      var m1 = milestoneAvg(1), m3 = milestoneAvg(3), m6 = milestoneAvg(6), m12 = milestoneAvg(12);
+      /* trend: first 3 cohorts vs last 3 cohorts that have an M1 */
+      function groupM1(list) {
+        var v = list.filter(function (c) { return c.retained.length > 1; });
+        if (!v.length) return null;
+        var num = 0, den = 0;
+        v.forEach(function (c) { num += c.retained[1]; den += c.size; });
+        return num / den;
+      }
+      var withM1All = state.cohorts.filter(function (c) { return c.retained.length > 1; });
+      var first3 = groupM1(withM1All.slice(0, 3));
+      var last3 = groupM1(withM1All.slice(-3));
+      var trendHtml = "";
+      if (first3 != null && last3 != null) {
+        var d = last3 - first3;
+        var cls = d >= 0 ? "up" : "down";
+        var arrow = d >= 0 ? "▲" : "▼";
+        trendHtml = '<span class="' + cls + '">' + arrow + " " + fmtPct(Math.abs(d)) + "</span> newest 3 cohorts vs oldest 3";
+      }
+      /* best cohort by M3 */
+      var best = null;
+      state.cohorts.forEach(function (c) {
+        var r = retentionAt(c, 3);
+        if (r != null && (!best || r > best.r)) best = { c: c, r: r };
+      });
+      /* steepest average drop */
+      var worstDrop = null;
+      for (var p = 1; p < maxPeriods(); p++) {
+        var a = avgRetention(p - 1), b = avgRetention(p);
+        if (a != null && b != null && (!worstDrop || (a - b) > worstDrop.d)) worstDrop = { p: p, d: a - b };
+      }
+      var cards = [
+        { label: "Total users in cohorts", value: fmtInt(totalUsers()), sub: state.cohorts.length + " monthly cohorts" },
+        { label: "Avg Month-1 retention", value: m1 != null ? fmtPct(m1) : "—", sub: trendHtml || "share still active one month after signup" },
+        { label: "Avg Month-6 retention", value: m6 != null ? fmtPct(m6) : "—", sub: m12 != null ? fmtPct(m12) + " still active at Month 12" : "not enough mature cohorts for M12" },
+        { label: "Best cohort (Month 3)", value: best ? esc(best.c.label) : "—", sub: best ? fmtPct(best.r) + " retained at M3 · " + fmtInt(best.c.size) + " users" : "" },
+        { label: "Steepest drop-off", value: worstDrop ? "M" + (worstDrop.p - 1) + " → M" + worstDrop.p : "—", sub: worstDrop ? "average curve loses " + fmtPct(worstDrop.d) + " there" : "" }
+      ];
+      $("kpis").innerHTML = cards.map(function (k) {
+        return '<div class="kpi"><div class="k-label">' + k.label + '</div><div class="k-value mono">' + k.value + '</div><div class="k-sub">' + k.sub + "</div></div>";
+      }).join("");
+    }
+
+    /* ================= Insights ================= */
+    function renderInsights() {
+      var out = [];
+      /* 1. trend insight */
+      var withM1 = state.cohorts.filter(function (c) { return c.retained.length > 1; });
+      if (withM1.length >= 6) {
+        function wAvg(list) { var n = 0, d = 0; list.forEach(function (c) { n += c.retained[1]; d += c.size; }); return n / d; }
+        var oldG = wAvg(withM1.slice(0, 3)), newG = wAvg(withM1.slice(-3));
+        var diff = newG - oldG;
+        out.push({
+          title: "Are newer cohorts sticking better?",
+          warn: diff < -0.005,
+          html: diff >= 0.005
+            ? "Yes. The newest three cohorts average <b>" + fmtPct(newG) + "</b> Month-1 retention vs <b>" + fmtPct(oldG) + "</b> for the oldest three — onboarding or product changes are paying off."
+            : diff <= -0.005
+              ? "No — they're slipping. Newest three cohorts average <b>" + fmtPct(newG) + "</b> at Month 1 vs <b>" + fmtPct(oldG) + "</b> for the oldest three. Recent growth may be lower-intent users."
+              : "Flat. Newest cohorts average <b>" + fmtPct(newG) + "</b> at Month 1 vs <b>" + fmtPct(oldG) + "</b> for the oldest three — growth is scaling without changing who sticks."
+        });
+      }
+      /* 2. flattening point */
+      var flatP = null;
+      for (var p = 2; p < maxPeriods() - 1; p++) {
+        var a = avgRetention(p), b = avgRetention(p + 1);
+        if (a != null && b != null && (a - b) < 0.015) { flatP = p; break; }
+      }
+      var core = avgRetention(maxPeriods() - 1);
+      if (flatP != null) {
+        out.push({
+          title: "Where the curve flattens",
+          html: "The average curve flattens around <b>Month " + flatP + "</b> — cohorts stop bleeding and settle to a loyal core of roughly <b>" + fmtPct(core) + "</b>. Users who survive to M" + flatP + " are your long-term base; getting more users past M1–M2 is the highest-leverage fix."
+        });
+      }
+      /* 3. biggest cohort + M6 spread */
+      var withM6 = state.cohorts.filter(function (c) { return retentionAt(c, 6) != null; });
+      if (withM6.length >= 3) {
+        var sorted = withM6.slice().sort(function (a, b) { return retentionAt(b, 6) - retentionAt(a, 6); });
+        var top = sorted[0], bot = sorted[sorted.length - 1];
+        var gap6 = retentionAt(top, 6) - retentionAt(bot, 6);
+        out.push({
+          title: "Best vs worst at Month 6",
+          warn: gap6 > 0.08,
+          html: gap6 > 0.08
+            ? "<b>" + esc(top.label) + "</b> holds " + fmtPct(retentionAt(top, 6)) + " at M6 while <b>" + esc(bot.label) + "</b> holds only " + fmtPct(retentionAt(bot, 6)) + ". A gap that wide usually traces to a campaign, a pricing change, or an onboarding experiment in one of those months — worth a timeline check."
+            : "<b>" + esc(top.label) + "</b> holds " + fmtPct(retentionAt(top, 6)) + " at M6 vs <b>" + fmtPct(retentionAt(bot, 6)) + "</b> for <b>" + esc(bot.label) + "</b> — only " + fmtPct(gap6) + " apart. Cohort quality is consistent: no single month is dragging retention down, so gains have to come from the product, not from fixing one bad cohort."
+        });
+      }
+      if (!out.length) out.push({ title: "Not enough data yet", html: "Upload cohorts with at least a few months of history and the pattern insights will appear here." });
+      $("insights").innerHTML = out.slice(0, 3).map(function (i) {
+        return '<div class="insight' + (i.warn ? " warn" : "") + '"><div class="i-title">' + i.title + "</div><p>" + i.html + "</p></div>";
+      }).join("");
+    }
+
+    /* ================= Heatmap ================= */
+    function cellColors(pctVal) {
+      /* pctVal 0..1 → background + foreground, teal scale (or rust in churn mode) */
+      var t = Math.pow(pctVal, 0.75);
+      if (state.mode === "churn") {
+        return darkMode
+          ? { bg: "rgba(224,122,90," + (0.06 + 0.75 * t).toFixed(2) + ")", fg: t > 0.55 ? "#fff" : "var(--ink)" }
+          : { bg: "rgba(176,74,44," + (0.05 + 0.72 * t).toFixed(2) + ")", fg: t > 0.55 ? "#fff" : "var(--ink)" };
+      }
+      return darkMode
+        ? { bg: "rgba(46,180,140," + (0.05 + 0.72 * t).toFixed(2) + ")", fg: t > 0.55 ? "#08130e" : "var(--ink)" }
+        : { bg: "rgba(13,122,92," + (0.04 + 0.80 * t).toFixed(2) + ")", fg: t > 0.52 ? "#fff" : "var(--ink)" };
+    }
+    function cellText(c, p) {
+      var r = retentionAt(c, p);
+      if (r == null) return null;
+      if (state.mode === "users") return fmtInt(c.retained[p]);
+      if (state.mode === "churn") return p === 0 ? "—" : fmtPct(1 - r, 0);
+      return fmtPct(r, 0);
+    }
+    function cellValueForColor(c, p) {
+      var r = retentionAt(c, p);
+      if (r == null) return null;
+      return state.mode === "churn" ? (p === 0 ? 0 : 1 - r) : r;
+    }
+    function renderHeat() {
+      var P = maxPeriods();
+      var html = "<thead><tr><th class='rowhead'>Cohort</th>";
+      for (var p = 0; p < P; p++) html += "<th>M" + p + "</th>";
+      html += "</tr></thead><tbody>";
+      state.cohorts.forEach(function (c) {
+        var sel = state.selected === c.key ? " class='selected'" : "";
+        html += "<tr data-key='" + esc(c.key) + "'" + sel + "><td class='rowhead'><span class='cohort-name'>" + esc(c.label) + "</span><span class='cohort-size mono'>" + fmtInt(c.size) + " users</span></td>";
+        for (var p = 0; p < P; p++) {
+          var txt = cellText(c, p);
+          if (txt == null) { html += "<td class='empty'>·</td>"; continue; }
+          var col = cellColors(cellValueForColor(c, p));
+          html += "<td class='cell' style='background:" + col.bg + ";color:" + col.fg + "'>" + txt + "</td>";
+        }
+        html += "</tr>";
+      });
+      if (state.showAvg) {
+        html += "<tr class='avg-row'><td class='rowhead'><span class='cohort-name'>Weighted average</span></td>";
+        for (var q = 0; q < P; q++) {
+          var raw = avgRetentionRaw(q);
+          if (!raw) { html += "<td class='empty'>·</td>"; continue; }
+          var r = raw.users / raw.base;
+          var v = state.mode === "users" ? fmtInt(raw.users)
+            : state.mode === "churn" ? (q === 0 ? "—" : fmtPct(1 - r, 0))
+            : fmtPct(r, 0);
+          html += "<td class='cell'>" + v + "</td>";
+        }
+        html += "</tr>";
+      }
+      html += "</tbody>";
+      $("heatTable").innerHTML = html;
+      var rows = $("heatTable").querySelectorAll("tbody tr[data-key]");
+      rows.forEach(function (tr) {
+        tr.addEventListener("click", function () {
+          var k = tr.getAttribute("data-key");
+          state.selected = state.selected === k ? null : k;
+          renderAll();
+        });
+      });
+      /* legend */
+      var steps = [0.05, 0.2, 0.35, 0.5, 0.65, 0.8, 0.95];
+      var proto = state.mode === "churn" ? { retained: [0], size: 1 } : null;
+      var sw = steps.map(function (s) {
+        var saved = state.mode;
+        var col;
+        if (saved === "churn") { var m = state.mode; state.mode = "churn"; col = cellColors(s); state.mode = m; }
+        else col = cellColors(s);
+        return "<span style='background:" + col.bg + "'></span>";
+      }).join("");
+      $("heatLegend").innerHTML = "<span>" + (state.mode === "churn" ? "Lower churn" : "Lower retention") + "</span><span class='scale'>" + sw + "</span><span>" + (state.mode === "churn" ? "Higher churn" : "Higher retention") + "</span><span style='margin-left:10px'>Hatched = cohort not old enough yet</span>";
+    }
+
+    /* ================= Curves chart (hand-authored SVG) ================= */
+    function cohortColor(i, n) {
+      /* teal (oldest) → amber (newest), no gradients, solid strokes */
+      var t = n <= 1 ? 0 : i / (n - 1);
+      var hue = 158 - 118 * t;          /* 158 → 40 */
+      var sat = darkMode ? 55 : 62;
+      var lit = darkMode ? 52 + 6 * t : 36 + 8 * t;
+      return "hsl(" + hue.toFixed(0) + "," + sat + "%," + lit + "%)";
+    }
+    function renderChart() {
+      var svg = $("curveChart");
+      var W = 880, H = 360, padL = 52, padR = 16, padT = 14, padB = 40;
+      var plotW = W - padL - padR, plotH = H - padT - padB;
+      var P = maxPeriods();
+      var xMax = Math.max(1, P - 1);
+      function X(p) { return padL + (p / xMax) * plotW; }
+      function Y(r) { return padT + (1 - r) * plotH; }
+      var s = "";
+      /* gridlines + y labels */
+      [0, 0.25, 0.5, 0.75, 1].forEach(function (g) {
+        var y = Y(g);
+        s += "<line x1='" + padL + "' y1='" + y + "' x2='" + (W - padR) + "' y2='" + y + "' stroke='var(--line)' stroke-width='1'/>";
+        s += "<text x='" + (padL - 9) + "' y='" + (y + 4) + "' text-anchor='end' font-size='11.5' fill='var(--muted)' font-family='IBM Plex Mono, monospace'>" + (g * 100) + "%</text>";
+      });
+      for (var p = 0; p < P; p++) {
+        s += "<text x='" + X(p) + "' y='" + (H - padB + 22) + "' text-anchor='middle' font-size='11.5' fill='var(--muted)' font-family='IBM Plex Mono, monospace'>M" + p + "</text>";
+      }
+      s += "<text x='" + (padL + plotW / 2) + "' y='" + (H - 4) + "' text-anchor='middle' font-size='12' fill='var(--muted)'>Months since signup</text>";
+      /* average line */
+      var avgPts = [];
+      for (var q = 0; q < P; q++) { var av = avgRetention(q); if (av != null) avgPts.push([q, av]); }
+      if (avgPts.length > 1) {
+        s += "<polyline fill='none' stroke='var(--ink-2)' stroke-width='2.4' stroke-dasharray='7 4' stroke-linejoin='round' points='" +
+          avgPts.map(function (pt) { return X(pt[0]).toFixed(1) + "," + Y(pt[1]).toFixed(1); }).join(" ") + "'/>";
+      }
+      /* cohort lines */
+      state.cohorts.forEach(function (c, i) {
+        var dim = state.selected && state.selected !== c.key;
+        var isSel = state.selected === c.key;
+        var pts = c.retained.map(function (v, p) { return X(p).toFixed(1) + "," + Y(v / c.size).toFixed(1); }).join(" ");
+        s += "<polyline data-key='" + esc(c.key) + "' fill='none' stroke='" + cohortColor(i, state.cohorts.length) + "' stroke-width='" + (isSel ? 3.2 : 1.7) + "' stroke-linejoin='round' stroke-linecap='round' opacity='" + (dim ? 0.14 : 0.92) + "' points='" + pts + "' style='cursor:pointer'/>";
+        if (isSel || !state.selected) {
+          c.retained.forEach(function (v, p) {
+            s += "<circle class='pt' data-key='" + esc(c.key) + "' data-p='" + p + "' data-r='" + (v / c.size) + "' cx='" + X(p) + "' cy='" + Y(v / c.size) + "' r='" + (isSel ? 4 : 3) + "' fill='" + cohortColor(i, state.cohorts.length) + "' opacity='" + (dim ? 0.14 : 1) + "' style='cursor:pointer'/>";
+          });
+        }
+      });
+      svg.innerHTML = s;
+      /* hover tooltip on points */
+      var tip = $("chartTip");
+      svg.querySelectorAll("circle.pt").forEach(function (pt) {
+        pt.addEventListener("mouseenter", function () {
+          var key = pt.getAttribute("data-key");
+          var c = state.cohorts.filter(function (x) { return x.key === key; })[0];
+          if (!c) return;
+          var p = +pt.getAttribute("data-p"), r = +pt.getAttribute("data-r");
+          tip.innerHTML = "<b>" + esc(c.label) + " cohort</b><br>Month " + p + ": " + fmtPct(r) + " retained<br>" + fmtInt(c.retained[p]) + " of " + fmtInt(c.size) + " users active";
+          tip.style.display = "block";
+          var wrapRect = svg.parentElement.getBoundingClientRect();
+          var svgRect = svg.getBoundingClientRect();
+          var px = (svgRect.width / W) * (+pt.getAttribute("cx"));
+          var py = (svgRect.height / H) * (+pt.getAttribute("cy"));
+          tip.style.left = Math.min(wrapRect.width - 190, Math.max(4, px + 12)) + "px";
+          tip.style.top = Math.max(4, py - 14) + "px";
+        });
+        pt.addEventListener("mouseleave", function () { tip.style.display = "none"; });
+      });
+      svg.querySelectorAll("polyline[data-key]").forEach(function (pl) {
+        pl.addEventListener("click", function () {
+          var k = pl.getAttribute("data-key");
+          state.selected = state.selected === k ? null : k;
+          renderAll();
+        });
+      });
+      /* chips */
+      $("cohortChips").innerHTML = state.cohorts.map(function (c, i) {
+        var pressed = state.selected === c.key;
+        var dim = state.selected && !pressed;
+        return "<button type='button' class='chip" + (dim ? " dim" : "") + "' data-key='" + esc(c.key) + "' aria-pressed='" + pressed + "'><span class='swatch' style='background:" + cohortColor(i, state.cohorts.length) + "'></span>" + esc(c.label) + "</button>";
+      }).join("");
+      $("cohortChips").querySelectorAll(".chip").forEach(function (chip) {
+        chip.addEventListener("click", function () {
+          var k = chip.getAttribute("data-key");
+          state.selected = state.selected === k ? null : k;
+          renderAll();
+        });
+      });
+    }
+
+    /* ================= Scorecard table ================= */
+    function renderScore() {
+      var cols = [
+        { key: "cohort", label: "Cohort" },
+        { key: "size", label: "Size" },
+        { key: "m1", label: "M1" },
+        { key: "m3", label: "M3" },
+        { key: "m6", label: "M6" },
+        { key: "m12", label: "M12" },
+        { key: "exp", label: "Expected active months" }
+      ];
+      function val(c, key) {
+        if (key === "cohort") return c.key;
+        if (key === "size") return c.size;
+        if (key === "exp") return expectedMonths(c);
+        var p = key === "m1" ? 1 : key === "m3" ? 3 : key === "m6" ? 6 : 12;
+        var r = retentionAt(c, p);
+        return r == null ? -1 : r;
+      }
+      var rows = state.cohorts.slice().sort(function (a, b) {
+        var va = val(a, state.sortKey), vb = val(b, state.sortKey);
+        if (typeof va === "string") return va.localeCompare(vb) * state.sortDir;
+        return (va - vb) * state.sortDir;
+      });
+      var html = "<thead><tr>" + cols.map(function (col) {
+        var arrow = state.sortKey === col.key ? "<span class='arrow'>" + (state.sortDir === 1 ? "▲" : "▼") + "</span>" : "";
+        return "<th class='sortable' data-key='" + col.key + "'>" + col.label + arrow + "</th>";
+      }).join("") + "</tr></thead><tbody>";
+      rows.forEach(function (c) {
+        function pctCell(p) {
+          var r = retentionAt(c, p);
+          if (r == null) return "<td class='num' style='color:var(--muted)'>—</td>";
+          var w = Math.round(r * 100);
+          return "<td class='num'><span class='bar-cell'><span class='bar-track'><span class='bar-fill' style='width:" + w + "%'></span></span>" + fmtPct(r) + "</span></td>";
+        }
+        html += "<tr><td style='font-weight:600'>" + esc(c.label) + "</td><td class='num'>" + fmtInt(c.size) + "</td>" +
+          pctCell(1) + pctCell(3) + pctCell(6) + pctCell(12) +
+          "<td class='num' style='font-weight:600'>" + expectedMonths(c).toFixed(2) + "</td></tr>";
+      });
+      html += "</tbody>";
+      $("scoreTable").innerHTML = html;
+      $("scoreTable").querySelectorAll("th.sortable").forEach(function (th) {
+        th.addEventListener("click", function () {
+          var k = th.getAttribute("data-key");
+          if (state.sortKey === k) state.sortDir *= -1;
+          else { state.sortKey = k; state.sortDir = k === "cohort" ? 1 : -1; }
+          renderScore();
+        });
+      });
+    }
+
+    /* ================= Render all ================= */
+    function renderAll() {
+      $("datasetName").textContent = state.sourceName;
+      $("datasetMeta").textContent = state.cohorts.length + " cohorts · " + fmtInt(totalUsers()) + " users";
+      renderKpis();
+      renderInsights();
+      renderHeat();
+      renderChart();
+      renderScore();
+    }
+
+    /* ================= CSV: parse ================= */
+    function parseCsvText(text) {
+      var rows = [], row = [], field = "", inQ = false;
+      var t = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+      for (var i = 0; i < t.length; i++) {
+        var ch = t[i];
+        if (inQ) {
+          if (ch === '"') {
+            if (t[i + 1] === '"') { field += '"'; i++; } else inQ = false;
+          } else field += ch;
+        } else if (ch === '"') inQ = true;
+        else if (ch === ",") { row.push(field); field = ""; }
+        else if (ch === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+        else field += ch;
+      }
+      if (field.length || row.length) { row.push(field); rows.push(row); }
+      return rows.filter(function (r) { return r.length > 1 || (r.length === 1 && r[0].trim() !== ""); });
+    }
+    function normHeader(h) { return String(h).trim().toLowerCase().replace(/[\s\-]+/g, "_"); }
+    function parseMonthLabel(raw) {
+      var s = String(raw).trim();
+      var m1 = s.match(/^(\d{4})[-\/](\d{1,2})/);
+      if (m1) return { key: m1[1] + "-" + ("0" + (+m1[2])).slice(-2), label: monthLabel(+m1[1], +m1[2]) };
+      var names = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+      var m2 = s.toLowerCase().match(/([a-z]{3})[a-z]*\s+(\d{4})/);
+      if (m2) { var mi = names.indexOf(m2[1]) + 1; if (mi > 0) return { key: m2[2] + "-" + ("0" + mi).slice(-2), label: monthLabel(+m2[2], mi) }; }
+      return null;
+    }
+
+    function cohortsFromRows(rows) {
+      if (rows.length < 2) throw new Error("The file has no data rows under the header.");
+      var headers = rows[0].map(normHeader);
+      var ci = headers.findIndex(function (h) { return h === "cohort_month" || h === "cohort" || h === "month" || h === "signup_month"; });
+      if (ci < 0) throw new Error("Missing a cohort column — expected a header like cohort_month.");
+      var pi = headers.findIndex(function (h) { return h === "months_since_signup" || h === "period" || h === "month_index" || h === "period_index" || h === "months"; });
+      var ui = headers.findIndex(function (h) { return h === "active_users" || h === "users" || h === "retained_users" || h === "retained" || h === "count"; });
+
+      var byKey = {};
+      function getCohort(rawMonth) {
+        var pm = parseMonthLabel(rawMonth);
+        if (!pm) throw new Error("Could not read cohort month '" + rawMonth + "' — use YYYY-MM (e.g. 2025-03).");
+        if (!byKey[pm.key]) byKey[pm.key] = { key: pm.key, label: pm.label, size: 0, cells: {} };
+        return byKey[pm.key];
+      }
+      var r, j;
+      if (pi >= 0 && ui >= 0) {
+        /* long format */
+        for (r = 1; r < rows.length; r++) {
+          var c = getCohort(rows[r][ci]);
+          var p = parseInt(String(rows[r][pi]).replace(/[^0-9]/g, ""), 10);
+          var u = parseFloat(String(rows[r][ui]).replace(/[^0-9.]/g, ""));
+          if (isNaN(p) || isNaN(u)) continue;
+          c.cells[p] = u;
+        }
+      } else {
+        /* wide format: period columns named 0,1,2… or m0,m1,m2… */
+        var periodCols = [];
+        headers.forEach(function (h, idx) {
+          var mm = h.match(/^m?(\d+)$/);
+          if (mm && idx !== ci) periodCols.push({ idx: idx, p: +mm[1] });
+        });
+        if (!periodCols.length) throw new Error("Could not find period columns. Use the long format (cohort_month, months_since_signup, active_users) or wide columns m0, m1, m2…");
+        for (r = 1; r < rows.length; r++) {
+          var c2 = getCohort(rows[r][ci]);
+          periodCols.forEach(function (pc) {
+            var u2 = parseFloat(String(rows[r][pc.idx] == null ? "" : rows[r][pc.idx]).replace(/[^0-9.]/g, ""));
+            if (!isNaN(u2)) c2.cells[pc.p] = u2;
+          });
+        }
+      }
+      var cohorts = Object.keys(byKey).sort().map(function (k) {
+        var c = byKey[k];
+        var maxP = Math.max.apply(null, Object.keys(c.cells).map(Number).concat([0]));
+        var retained = [];
+        for (var p = 0; p <= maxP; p++) retained.push(c.cells[p] != null ? Math.round(c.cells[p]) : 0);
+        /* if month 0 is missing but a size column exists, month 0 = max cell */
+        if (!c.cells[0]) retained[0] = Math.max.apply(null, retained);
+        return { key: c.key, label: c.label, size: retained[0], retained: retained };
+      }).filter(function (c) { return c.size > 0; });
+      if (!cohorts.length) throw new Error("No usable cohorts found — check that month-0 rows have positive user counts.");
+      return cohorts;
+    }
+
+    function showMsg(text, ok) {
+      var el = $("uploadMsg");
+      el.textContent = text;
+      el.className = "upload-msg " + (ok ? "ok" : "err");
+    }
+
+    $("csvFile").addEventListener("change", function (ev) {
+      var f = ev.target.files && ev.target.files[0];
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var cohorts = cohortsFromRows(parseCsvText(String(reader.result)));
+          state.cohorts = cohorts;
+          state.sourceName = f.name;
+          state.selected = null;
+          renderAll();
+          showMsg("Loaded " + cohorts.length + " cohorts (" + fmtInt(totalUsers()) + " users) from " + f.name + ".", true);
+        } catch (e) {
+          showMsg("Couldn't read that CSV: " + e.message, false);
+        }
+        ev.target.value = "";
+      };
+      reader.onerror = function () { showMsg("Couldn't read that file.", false); ev.target.value = ""; };
+      reader.readAsText(f);
+    });
+
+    /* ================= CSV: download helpers ================= */
+    function download(name, text) {
+      var blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 400);
+    }
+    $("btnTemplate").addEventListener("click", function () {
+      var lines = ["cohort_month,months_since_signup,active_users"];
+      var ex = [
+        ["2025-01", 1240], ["2025-02", 1315], ["2025-03", 1428]
+      ];
+      ex.forEach(function (e) {
+        var size = e[1];
+        for (var p = 0; p <= 6; p++) {
+          var r = p === 0 ? 1 : 0.22 + 0.78 * Math.exp(-0.42 * p);
+          lines.push(e[0] + "," + p + "," + Math.round(size * r));
+        }
+      });
+      lines.push("# Replace these example rows with your own: one row per cohort per month.");
+      download("cohort-retention-template.csv", lines.join("\n"));
+    });
+    $("btnExport").addEventListener("click", function () {
+      var P = maxPeriods();
+      var head = ["cohort_month", "cohort_size"];
+      for (var p = 0; p < P; p++) head.push("m" + p + "_users", "m" + p + "_retention_pct");
+      var lines = [head.join(",")];
+      state.cohorts.forEach(function (c) {
+        var row = [c.key, c.size];
+        for (var p = 0; p < P; p++) {
+          var r = retentionAt(c, p);
+          row.push(r == null ? "" : c.retained[p], r == null ? "" : (r * 100).toFixed(2));
+        }
+        lines.push(row.join(","));
+      });
+      var avg = ["weighted_average", ""];
+      for (var q = 0; q < P; q++) {
+        var raw = avgRetentionRaw(q);
+        avg.push(raw ? raw.users : "", raw ? (raw.users / raw.base * 100).toFixed(2) : "");
+      }
+      lines.push(avg.join(","));
+      download("cohort-retention-matrix.csv", lines.join("\n"));
+    });
+    $("btnReset").addEventListener("click", function () {
+      state.cohorts = buildSample();
+      state.sourceName = "Sample data";
+      state.selected = null;
+      renderAll();
+      showMsg("Back to the built-in sample dataset (18 cohorts, Jan 2024 – Jun 2025).", true);
+    });
+
+    /* ================= View controls ================= */
+    function setMode(mode) {
+      state.mode = mode;
+      $("segPct").setAttribute("aria-pressed", mode === "pct");
+      $("segUsers").setAttribute("aria-pressed", mode === "users");
+      $("segChurn").setAttribute("aria-pressed", mode === "churn");
+      renderHeat();
+    }
+    $("segPct").addEventListener("click", function () { setMode("pct"); });
+    $("segUsers").addEventListener("click", function () { setMode("users"); });
+    $("segChurn").addEventListener("click", function () { setMode("churn"); });
+    $("chkAvg").addEventListener("change", function (ev) { state.showAvg = ev.target.checked; renderHeat(); });
+
+    renderAll();
+    </script>
+  </body>
+</html>

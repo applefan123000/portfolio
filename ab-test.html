@@ -1,0 +1,1139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="author" content="Fan (David) Xu" />
+    <link rel="icon" href="data:," />
+    <title>A/B Test Significance Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f3f5f4;
+        --surface: #ffffff;
+        --surface-2: #edf1ef;
+        --ink: #182420;
+        --muted: #5a6c64;
+        --line: #d8e0dc;
+        --a: #2563eb;
+        --a-soft: rgba(37, 99, 235, 0.12);
+        --b: #e4572e;
+        --b-soft: rgba(228, 87, 46, 0.12);
+        --good: #177245;
+        --good-bg: #e2f1e7;
+        --bad: #b3382e;
+        --bad-bg: #f9e6e3;
+        --warn: #8f6108;
+        --warn-bg: #f6ecd2;
+        --neutral-bg: #e8edeb;
+        --btn: #182420;
+        --btn-ink: #f4f7f5;
+        --focus: #2563eb;
+        --shadow: 0 1px 2px rgba(20, 35, 28, 0.06), 0 8px 24px rgba(20, 35, 28, 0.05);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0d1311;
+          --surface: #161e1b;
+          --surface-2: #1e2824;
+          --ink: #e7efea;
+          --muted: #94a79c;
+          --line: #2b3833;
+          --a: #7fa8f5;
+          --a-soft: rgba(127, 168, 245, 0.16);
+          --b: #f08a5d;
+          --b-soft: rgba(240, 138, 93, 0.16);
+          --good: #4cc38a;
+          --good-bg: rgba(76, 195, 138, 0.14);
+          --bad: #f0837a;
+          --bad-bg: rgba(240, 131, 122, 0.14);
+          --warn: #e5b95c;
+          --warn-bg: rgba(229, 185, 92, 0.14);
+          --neutral-bg: #232f2a;
+          --btn: #e7efea;
+          --btn-ink: #14201b;
+          --focus: #7fa8f5;
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+      }
+      .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 56px; }
+      h1 { font-size: 30px; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.01em; }
+      .lede { color: var(--muted); max-width: 68ch; margin: 0 0 26px; font-size: 16.5px; }
+      h2 { font-size: 19px; margin: 0 0 4px; letter-spacing: -0.005em; }
+      h3 { font-size: 15px; margin: 0 0 6px; }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        padding: 20px;
+      }
+      .grid-main {
+        display: grid;
+        grid-template-columns: 400px 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+      .stack { display: grid; gap: 20px; }
+      .section-sub { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+
+      /* Variant input cards */
+      .variant { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px 16px; background: var(--surface); }
+      .variant + .variant { margin-top: 14px; }
+      .variant-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+      .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+      .dot-a { background: var(--a); }
+      .dot-b { background: var(--b); }
+      .variant-head input[type="text"] {
+        font: inherit; font-weight: 600; border: none; background: transparent; color: var(--ink);
+        width: 100%; padding: 2px 0; border-bottom: 1px dashed transparent;
+      }
+      .variant-head input[type="text"]:focus { outline: none; border-bottom-color: var(--focus); }
+      .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      label.f { display: block; font-size: 13px; color: var(--muted); font-weight: 500; }
+      label.f > span { display: block; margin-bottom: 5px; }
+      input[type="number"], select {
+        width: 100%; font: inherit; font-size: 16px; color: var(--ink);
+        background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px;
+        padding: 9px 10px;
+      }
+      input[type="number"]:focus, select:focus { outline: 2px solid var(--focus); outline-offset: 0; border-color: var(--focus); }
+      .rate-line { margin-top: 12px; font-size: 14px; color: var(--muted); display: flex; justify-content: space-between; align-items: baseline; }
+      .rate-line strong { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 19px; color: var(--ink); font-weight: 600; }
+      .rate-bar { height: 6px; border-radius: 3px; background: var(--surface-2); margin-top: 8px; overflow: hidden; }
+      .rate-bar i { display: block; height: 100%; border-radius: 3px; transition: width 0.25s ease; }
+      .err { color: var(--bad); font-size: 13.5px; margin-top: 10px; display: none; }
+      .err.show { display: block; }
+
+      /* CSV import */
+      .import-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+      .import-row .btn { font-size: 13.5px; padding: 8px 14px; }
+      .csv-note { font-size: 13.5px; color: var(--muted); margin: 10px 0 0; display: none; }
+      .csv-note.show { display: block; }
+      .csv-note.warn { color: var(--warn); }
+      .csv-note.bad { color: var(--bad); }
+
+      /* SRM banner */
+      .srm { border-radius: 10px; padding: 13px 18px; border: 1px solid var(--line); background: var(--surface); }
+      .srm .srm-title { font-weight: 700; margin: 0 0 2px; font-size: 15px; color: var(--ink); }
+      .srm p { margin: 0; font-size: 14px; color: var(--muted); }
+      .srm.alert { background: var(--bad-bg); border-color: var(--bad); }
+      .srm.alert .srm-title { color: var(--bad); font-size: 16.5px; }
+      .srm.alert p { color: var(--ink); }
+
+      /* Settings */
+      .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+      .seg button {
+        flex: 1; font: inherit; font-size: 14px; padding: 9px 6px; border: none; cursor: pointer;
+        background: var(--surface-2); color: var(--muted);
+      }
+      .seg button[aria-pressed="true"] { background: var(--btn); color: var(--btn-ink); font-weight: 600; }
+      .presets { display: flex; flex-wrap: wrap; gap: 8px; }
+      .presets button {
+        font: inherit; font-size: 13.5px; padding: 7px 12px; border-radius: 999px; cursor: pointer;
+        background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+      }
+      .presets button:hover { border-color: var(--muted); }
+      .setting-row { display: grid; gap: 6px; margin-bottom: 14px; }
+      .setting-row > span { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+      /* Verdict */
+      .verdict { border-radius: 10px; padding: 18px 20px; border: 1px solid var(--line); background: var(--neutral-bg); }
+      .verdict.good { background: var(--good-bg); }
+      .verdict.bad { background: var(--bad-bg); }
+      .verdict.warn { background: var(--warn-bg); }
+      .verdict .v-title { font-size: 21px; font-weight: 700; margin: 0 0 4px; line-height: 1.25; }
+      .verdict.good .v-title { color: var(--good); }
+      .verdict.bad .v-title { color: var(--bad); }
+      .verdict.warn .v-title { color: var(--warn); }
+      .verdict p { margin: 0; font-size: 15px; }
+      .verdict .v-note { margin-top: 8px; font-size: 14px; color: var(--muted); }
+      .verdict.good .v-note, .verdict.bad .v-note, .verdict.warn .v-note { color: inherit; opacity: 0.85; }
+
+      /* Metric tiles */
+      .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 13px 15px; }
+      .tile .t-label { font-size: 12.5px; color: var(--muted); font-weight: 500; letter-spacing: 0.01em; }
+      .tile .t-value { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 21px; font-weight: 600; margin-top: 2px; }
+      .tile .t-sub { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+      .tile .t-value.pos { color: var(--good); }
+      .tile .t-value.neg { color: var(--bad); }
+
+      /* Charts */
+      .chart-wrap { width: 100%; }
+      svg.chart { width: 100%; height: auto; display: block; }
+      .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13.5px; color: var(--muted); margin-top: 6px; }
+      .legend span { display: inline-flex; align-items: center; gap: 7px; }
+      .swatch { width: 18px; height: 4px; border-radius: 2px; display: inline-block; }
+      .axis-label { font-size: 11.5px; fill: var(--muted); font-family: "IBM Plex Sans", sans-serif; }
+      .curve-label { font-size: 13px; font-weight: 600; font-family: "IBM Plex Sans", sans-serif; }
+      .zero-note { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+
+      /* Planner */
+      .planner-grid { display: grid; grid-template-columns: repeat(4, 1fr) 1.2fr; gap: 14px; align-items: end; }
+      .planner-result { background: var(--surface-2); border-radius: 8px; padding: 12px 16px; }
+      .planner-result .big { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 24px; font-weight: 600; }
+      .planner-result .small { font-size: 13px; color: var(--muted); }
+
+      /* Reading guide */
+      .guide { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .guide p { margin: 0; font-size: 14.5px; color: var(--muted); }
+      .guide h3 { color: var(--ink); }
+
+      .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+      .btn {
+        font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer;
+        background: var(--btn); color: var(--btn-ink); border: 1px solid var(--btn);
+        padding: 10px 18px; border-radius: 6px;
+      }
+      .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+      .copy-feedback { font-size: 13.5px; color: var(--good); align-self: center; min-height: 1em; }
+      footer { margin-top: 34px; color: var(--muted); font-size: 13.5px; max-width: 78ch; }
+      footer p { margin: 0 0 6px; }
+      footer .byline { color: var(--ink); font-weight: 600; font-size: 14px; margin-bottom: 10px; }
+
+      @media (max-width: 1020px) {
+        .grid-main { grid-template-columns: 1fr; }
+        .planner-grid { grid-template-columns: repeat(2, 1fr); }
+        .guide { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 560px) {
+        .wrap { padding: 20px 14px 44px; }
+        h1 { font-size: 25px; }
+        .tiles { grid-template-columns: repeat(2, 1fr); }
+        .fields { grid-template-columns: 1fr 1fr; }
+        .planner-grid { grid-template-columns: 1fr; }
+        .card { padding: 16px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .rate-bar i { transition: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>A/B Test Significance Calculator</h1>
+        <p class="lede">
+          Enter the visitors and conversions for each variant. The calculator runs a two-proportion
+          z-test (Fisher's exact test when either variant has few conversions) and tells you whether
+          the difference is real, how big it is, and — if the test is
+          still inconclusive — how much more traffic you need before you can call it.
+        </p>
+      </header>
+
+      <div class="grid-main">
+        <!-- ============ INPUTS ============ -->
+        <div class="stack">
+          <section class="card" aria-labelledby="data-h">
+            <h2 id="data-h">Test data</h2>
+            <p class="section-sub">Results update as you type.</p>
+
+            <div class="variant">
+              <div class="variant-head">
+                <span class="dot dot-a" aria-hidden="true"></span>
+                <input type="text" id="nameA" value="Control (A)" aria-label="Name of variant A" />
+              </div>
+              <div class="fields">
+                <label class="f"><span>Visitors</span>
+                  <input type="number" id="nA" min="0" step="1" value="12483" inputmode="numeric" />
+                </label>
+                <label class="f"><span>Conversions</span>
+                  <input type="number" id="xA" min="0" step="1" value="1504" inputmode="numeric" />
+                </label>
+              </div>
+              <div class="rate-line"><span>Conversion rate</span><strong id="rateA">—</strong></div>
+              <div class="rate-bar"><i id="barA" style="background: var(--a); width: 0%"></i></div>
+            </div>
+
+            <div class="variant">
+              <div class="variant-head">
+                <span class="dot dot-b" aria-hidden="true"></span>
+                <input type="text" id="nameB" value="Variant (B)" aria-label="Name of variant B" />
+              </div>
+              <div class="fields">
+                <label class="f"><span>Visitors</span>
+                  <input type="number" id="nB" min="0" step="1" value="12390" inputmode="numeric" />
+                </label>
+                <label class="f"><span>Conversions</span>
+                  <input type="number" id="xB" min="0" step="1" value="1672" inputmode="numeric" />
+                </label>
+              </div>
+              <div class="rate-line"><span>Conversion rate</span><strong id="rateB">—</strong></div>
+              <div class="rate-bar"><i id="barB" style="background: var(--b); width: 0%"></i></div>
+            </div>
+
+            <p class="err" id="inputErr" role="alert"></p>
+
+            <div class="import-row">
+              <button type="button" class="btn ghost" id="uploadBtn">Upload CSV</button>
+              <button type="button" class="btn ghost" id="templateBtn">Download CSV template</button>
+              <input type="file" id="csvFile" accept=".csv,text/csv,text/plain" hidden />
+            </div>
+            <p class="csv-note" id="csvNote" role="status"></p>
+          </section>
+
+          <section class="card" aria-labelledby="settings-h">
+            <h2 id="settings-h">Settings</h2>
+            <p class="section-sub">Match these to how the test was designed.</p>
+            <div class="setting-row">
+              <span id="conf-label">Confidence level</span>
+              <select id="alpha" aria-labelledby="conf-label">
+                <option value="0.10">90% confidence (α = 0.10)</option>
+                <option value="0.05" selected>95% confidence (α = 0.05)</option>
+                <option value="0.01">99% confidence (α = 0.01)</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <span id="tails-label">Hypothesis</span>
+              <div class="seg" role="group" aria-labelledby="tails-label">
+                <button type="button" id="tailTwo" aria-pressed="true">Two-sided (B ≠ A)</button>
+                <button type="button" id="tailOne" aria-pressed="false">One-sided (B &gt; A)</button>
+              </div>
+            </div>
+            <div class="setting-row" style="margin-bottom: 0">
+              <span>Try an example</span>
+              <div class="presets">
+                <button type="button" data-preset="checkout">Checkout button</button>
+                <button type="button" data-preset="pricing">Pricing headline</button>
+                <button type="button" data-preset="trial">Free-trial CTA</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ============ RESULTS ============ -->
+        <div class="stack">
+          <section class="verdict" id="verdict" aria-live="polite">
+            <p class="v-title" id="vTitle">Enter your test data</p>
+            <p id="vBody">Add visitors and conversions for both variants to see the result.</p>
+            <p class="v-note" id="vNote" hidden></p>
+          </section>
+
+          <div class="srm" id="srm" hidden>
+            <p class="srm-title" id="srmTitle"></p>
+            <p id="srmBody"></p>
+          </div>
+
+          <div class="tiles" id="tiles">
+            <div class="tile">
+              <div class="t-label">Absolute lift (B − A)</div>
+              <div class="t-value" id="tAbs">—</div>
+              <div class="t-sub">percentage points</div>
+            </div>
+            <div class="tile">
+              <div class="t-label">Relative lift</div>
+              <div class="t-value" id="tRel">—</div>
+              <div class="t-sub">vs. control rate</div>
+            </div>
+            <div class="tile">
+              <div class="t-label">p-value</div>
+              <div class="t-value" id="tP">—</div>
+              <div class="t-sub" id="tPSub">two-proportion z-test</div>
+            </div>
+            <div class="tile">
+              <div class="t-label">z-score</div>
+              <div class="t-value" id="tZ">—</div>
+              <div class="t-sub">standard errors from zero</div>
+            </div>
+            <div class="tile">
+              <div class="t-label" id="tCiLabel">95% confidence interval</div>
+              <div class="t-value" id="tCi" style="font-size: 17px">—</div>
+              <div class="t-sub">for the true difference (B − A)</div>
+            </div>
+            <div class="tile">
+              <div class="t-label">Chance B beats A</div>
+              <div class="t-value" id="tProb">—</div>
+              <div class="t-sub">normal approximation</div>
+            </div>
+          </div>
+
+          <section class="card" aria-labelledby="chart-h">
+            <h2 id="chart-h">Conversion-rate distributions</h2>
+            <p class="section-sub">
+              Each curve is the sampling distribution of that variant's conversion rate. The more the
+              curves overlap, the less certain the difference.
+            </p>
+            <div class="chart-wrap" id="curveChart"></div>
+            <div class="legend">
+              <span><i class="swatch" style="background: var(--a)"></i><span id="legA">Control (A)</span></span>
+              <span><i class="swatch" style="background: var(--b)"></i><span id="legB">Variant (B)</span></span>
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="ci-h">
+            <h2 id="ci-h">Difference and confidence interval</h2>
+            <p class="section-sub">
+              If the interval sits entirely on one side of zero, the difference is significant at the
+              chosen level.
+            </p>
+            <div class="chart-wrap" id="ciChart"></div>
+            <p class="zero-note" id="ciNote"></p>
+            <div class="actions">
+              <button type="button" class="btn" id="copyBtn">Copy result summary</button>
+              <button type="button" class="btn ghost" id="exportBtn">Download analysis (CSV)</button>
+              <span class="copy-feedback" id="copyFeedback" role="status"></span>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ============ PLANNER ============ -->
+      <section class="card" style="margin-top: 20px" aria-labelledby="plan-h">
+        <h2 id="plan-h">Sample-size planner</h2>
+        <p class="section-sub">
+          How much traffic a test needs <em>before</em> it starts, to detect a given lift with 80%
+          power at the confidence level selected above.
+        </p>
+        <div class="planner-grid">
+          <label class="f"><span>Baseline conversion rate (%)</span>
+            <input type="number" id="pBase" min="0.1" max="99" step="0.1" value="12" />
+          </label>
+          <label class="f"><span>Minimum detectable lift (relative %)</span>
+            <input type="number" id="pMde" min="0.1" step="0.5" value="10" />
+          </label>
+          <label class="f"><span>Power</span>
+            <select id="pPower">
+              <option value="0.8" selected>80%</option>
+              <option value="0.9">90%</option>
+              <option value="0.95">95%</option>
+            </select>
+          </label>
+          <label class="f"><span>Total daily traffic (both variants)</span>
+            <input type="number" id="pTraffic" min="0" step="100" value="2500" />
+          </label>
+          <div class="planner-result" aria-live="polite">
+            <div class="big" id="pResult">—</div>
+            <div class="small" id="pResultSub">visitors per variant</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ GUIDE ============ -->
+      <section class="card" style="margin-top: 20px" aria-labelledby="guide-h">
+        <h2 id="guide-h">Reading the results</h2>
+        <p class="section-sub">Three things that decide whether a "significant" result deserves to be shipped.</p>
+        <div class="guide">
+          <div>
+            <h3>What the p-value actually says</h3>
+            <p>
+              The p-value is the probability of seeing a difference at least this large if the two
+              variants truly performed identically. Below α (0.05 by default), that explanation
+              becomes implausible — it is not the probability that B is better, and it says nothing
+              about whether the lift is worth having.
+            </p>
+          </div>
+          <div>
+            <h3>Don't peek, don't stop early</h3>
+            <p>
+              Checking significance every day and stopping the moment it dips below 0.05 inflates
+              false positives well beyond 5%. Fix the sample size with the planner before launch,
+              then read the result once — or use a sequential-testing method designed for peeking.
+            </p>
+          </div>
+          <div>
+            <h3>Check the interval, not just the verdict</h3>
+            <p>
+              With enough traffic, a lift of 0.1% can be "significant" and still not worth the
+              engineering cost. If the whole confidence interval clears your minimum detectable
+              effect, the win is real <em>and</em> material. Also sanity-check the traffic split:
+              a large imbalance you didn't design usually means broken randomization.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <p class="byline">Designed &amp; built by Fan (David) Xu</p>
+        <p>
+          Method: two-proportion z-test with a pooled standard error for the p-value; the
+          confidence interval uses the unpooled standard error (Wald interval, normal
+          approximation). "Chance B beats A" is Φ(z) under the same approximation. When either
+          variant has fewer than 100 conversions, the p-value instead comes from Fisher's exact
+          test, which stays accurate at small counts, and the results label which test was used.
+          Every analysis also runs a sample-ratio-mismatch check: a chi-square goodness-of-fit
+          test of the observed visitor split against the expected 50/50 split, flagged when
+          significant at the 1% level.
+        </p>
+      </footer>
+    </div>
+
+    <script>
+      "use strict";
+
+      /* ---------- Normal distribution helpers ---------- */
+      function erf(x) {
+        var sign = x < 0 ? -1 : 1;
+        x = Math.abs(x);
+        var t = 1 / (1 + 0.3275911 * x);
+        var y =
+          1 -
+          ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t +
+            0.254829592) *
+            t *
+            Math.exp(-x * x);
+        return sign * y;
+      }
+      function normCdf(z) {
+        return 0.5 * (1 + erf(z / Math.SQRT2));
+      }
+      function normPdf(x) {
+        return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+      }
+      /* Acklam's inverse normal CDF, plus one Halley refinement step
+         (drives the error to ~1e-12 across the range used here) */
+      function normInv(p) {
+        var x = acklamInv(p);
+        var e = normCdf(x) - p;
+        var u = e * Math.sqrt(2 * Math.PI) * Math.exp((x * x) / 2);
+        return x - u / (1 + (x * u) / 2);
+      }
+      function acklamInv(p) {
+        var a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285984469534e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+        var b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+        var c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+        var d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+        var plow = 0.02425, phigh = 1 - plow, q, r;
+        if (p < plow) {
+          q = Math.sqrt(-2 * Math.log(p));
+          return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+        }
+        if (p <= phigh) {
+          q = p - 0.5;
+          r = q * q;
+          return ((((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q) /
+            (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+        }
+        q = Math.sqrt(-2 * Math.log(1 - p));
+        return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+          ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+      }
+
+      /* ---------- Formatting ---------- */
+      function fmtInt(n) { return Math.round(n).toLocaleString("en-US"); }
+      function fmtPct(x, digits) {
+        if (!isFinite(x)) return "—";
+        return (x * 100).toFixed(digits == null ? 2 : digits) + "%";
+      }
+      function fmtSignedPctPoints(x, digits) {
+        if (!isFinite(x)) return "—";
+        var v = x * 100;
+        return (v > 0 ? "+" : "") + v.toFixed(digits == null ? 2 : digits) + " pts";
+      }
+      function fmtSignedRel(x) {
+        if (!isFinite(x)) return "—";
+        var v = x * 100;
+        return (v > 0 ? "+" : "") + v.toFixed(1) + "%";
+      }
+      function fmtP(p) {
+        if (!isFinite(p)) return "—";
+        if (p < 0.0001) return p.toExponential(1);
+        return p.toFixed(4).replace(/0+$/, "").replace(/\.$/, ".0");
+      }
+
+      /* ---------- DOM ---------- */
+      function $(id) { return document.getElementById(id); }
+      var els = {
+        nameA: $("nameA"), nameB: $("nameB"),
+        nA: $("nA"), xA: $("xA"), nB: $("nB"), xB: $("xB"),
+        rateA: $("rateA"), rateB: $("rateB"), barA: $("barA"), barB: $("barB"),
+        err: $("inputErr"), alpha: $("alpha"),
+        tailTwo: $("tailTwo"), tailOne: $("tailOne"),
+        verdict: $("verdict"), vTitle: $("vTitle"), vBody: $("vBody"), vNote: $("vNote"),
+        tAbs: $("tAbs"), tRel: $("tRel"), tP: $("tP"), tPSub: $("tPSub"), tZ: $("tZ"),
+        tCiLabel: $("tCiLabel"), tCi: $("tCi"), tProb: $("tProb"),
+        curveChart: $("curveChart"), ciChart: $("ciChart"), ciNote: $("ciNote"),
+        legA: $("legA"), legB: $("legB"),
+        pBase: $("pBase"), pMde: $("pMde"), pPower: $("pPower"), pTraffic: $("pTraffic"),
+        pResult: $("pResult"), pResultSub: $("pResultSub"),
+        copyBtn: $("copyBtn"), copyFeedback: $("copyFeedback"),
+        uploadBtn: $("uploadBtn"), templateBtn: $("templateBtn"), csvFile: $("csvFile"),
+        csvNote: $("csvNote"), exportBtn: $("exportBtn"),
+        srm: $("srm"), srmTitle: $("srmTitle"), srmBody: $("srmBody")
+      };
+      var twoSided = true;
+      var lastResult = null;
+
+      var PRESETS = {
+        checkout: { name: "Checkout button colour", nA: 12483, xA: 1504, nB: 12390, xB: 1672 },
+        pricing:  { name: "Pricing page headline", nA: 3240,  xA: 214,  nB: 3180,  xB: 232 },
+        trial:    { name: "Free-trial CTA wording", nA: 8540, xA: 1110, nB: 8612, xB: 1024 }
+      };
+
+      function readNum(el) {
+        var v = parseFloat(el.value);
+        return isNaN(v) ? NaN : v;
+      }
+
+      /* ---------- Fisher's exact test & SRM helpers ---------- */
+      /* Lanczos approximation of ln Gamma(x) */
+      function logGamma(z) {
+        var c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+          771.32342877765313, -176.61502916214059, 12.507343278686905,
+          -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+        if (z < 0.5) return Math.log(Math.PI) - Math.log(Math.sin(Math.PI * z)) - logGamma(1 - z);
+        z -= 1;
+        var x = c[0];
+        for (var i = 1; i < 9; i++) x += c[i] / (z + i);
+        var t = z + 7.5;
+        return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+      }
+      function logChoose(n, k) {
+        if (k < 0 || k > n) return -Infinity;
+        return logGamma(n + 1) - logGamma(k + 1) - logGamma(n - k + 1);
+      }
+      /* Exact p-value for the 2x2 table [[xA, nA-xA],[xB, nB-xB]] with fixed margins.
+         Two-sided: sum of table probabilities no larger than the observed table's.
+         One-sided (B > A): sum over tables with no more conversions in A than observed. */
+      function fisherExactP(nA, xA, nB, xB, twoSidedTest) {
+        var N = nA + nB, X = xA + xB;
+        var lo = Math.max(0, X - nB), hi = Math.min(nA, X);
+        var logDenom = logChoose(N, X);
+        function logP(k) { return logChoose(nA, k) + logChoose(nB, X - k) - logDenom; }
+        var pObs = logP(xA), p = 0;
+        for (var k = lo; k <= hi; k++) {
+          var lp = logP(k);
+          if (twoSidedTest ? lp <= pObs + 1e-9 : k <= xA) p += Math.exp(lp);
+        }
+        return p;
+      }
+      /* Chi-square goodness-of-fit of the visitor split against 50/50 (df = 1) */
+      function srmCheck(nA, nB) {
+        var total = nA + nB, exp = total / 2;
+        var chi2 = ((nA - exp) * (nA - exp)) / exp + ((nB - exp) * (nB - exp)) / exp;
+        var p = 2 * (1 - normCdf(Math.sqrt(chi2)));
+        return { chi2: chi2, p: Math.min(1, Math.max(0, p)), shareA: nA / total, shareB: nB / total, mismatch: p < 0.01 };
+      }
+
+      /* ---------- Core test ---------- */
+      function runTest(nA, xA, nB, xB, alpha, twoSidedTest) {
+        var pA = xA / nA, pB = xB / nB;
+        var diff = pB - pA;
+        var pooled = (xA + xB) / (nA + nB);
+        var sePooled = Math.sqrt(pooled * (1 - pooled) * (1 / nA + 1 / nB));
+        var seUnpooled = Math.sqrt((pA * (1 - pA)) / nA + (pB * (1 - pB)) / nB);
+        var z = sePooled > 0 ? diff / sePooled : 0;
+        /* Small samples: Fisher's exact test replaces the z-test for the p-value */
+        var useFisher = Math.min(xA, xB) < 100;
+        var pVal;
+        if (useFisher) pVal = fisherExactP(nA, xA, nB, xB, twoSidedTest);
+        else if (twoSidedTest) pVal = 2 * (1 - normCdf(Math.abs(z)));
+        else pVal = 1 - normCdf(z);
+        pVal = Math.min(1, Math.max(0, pVal));
+        var zCrit = normInv(1 - alpha / 2);
+        var ciLo = diff - zCrit * seUnpooled;
+        var ciHi = diff + zCrit * seUnpooled;
+        var significant = twoSidedTest ? pVal < alpha : pVal < alpha && diff > 0;
+        return {
+          pA: pA, pB: pB, diff: diff,
+          rel: pA > 0 ? diff / pA : NaN,
+          z: z, pVal: pVal, ciLo: ciLo, ciHi: ciHi,
+          seA: Math.sqrt((pA * (1 - pA)) / nA),
+          seB: Math.sqrt((pB * (1 - pB)) / nB),
+          significant: significant,
+          probB: normCdf(z),
+          useFisher: useFisher,
+          testUsed: useFisher ? "Fisher's exact test" : "Two-proportion z-test"
+        };
+      }
+
+      function requiredPerVariant(p1, p2, alpha, power, twoSidedTest) {
+        if (!(p2 > p1) || p1 <= 0 || p2 >= 1) return NaN;
+        var za = normInv(1 - (twoSidedTest ? alpha / 2 : alpha));
+        var zb = normInv(power);
+        var num = Math.pow(za + zb, 2) * (p1 * (1 - p1) + p2 * (1 - p2));
+        return Math.ceil(num / Math.pow(p2 - p1, 2));
+      }
+
+      /* ---------- Charts ---------- */
+      function curvePath(cx, se, lo, hi, x0, x1, yBase, yTop) {
+        if (!(se > 0)) return "";
+        var pts = [], N = 140, peak = normPdf(0) / se;
+        for (var i = 0; i <= N; i++) {
+          var x = lo + ((hi - lo) * i) / N;
+          var y = normPdf((x - cx) / se) / se / peak; /* 0..1 */
+          var px = x0 + ((x - lo) / (hi - lo)) * (x1 - x0);
+          var py = yBase - y * (yBase - yTop);
+          pts.push((i === 0 ? "M" : "L") + px.toFixed(1) + "," + py.toFixed(1));
+        }
+        return pts.join(" ");
+      }
+      function niceTicks(lo, hi, count) {
+        var ticks = [], step = (hi - lo) / (count - 1);
+        for (var i = 0; i < count; i++) ticks.push(lo + step * i);
+        return ticks;
+      }
+      function drawCurves(r) {
+        var W = 720, H = 250, padL = 14, padR = 14, top = 34, base = 208;
+        var lo = Math.min(r.pA - 4.2 * r.seA, r.pB - 4.2 * r.seB);
+        var hi = Math.max(r.pA + 4.2 * r.seA, r.pB + 4.2 * r.seB);
+        lo = Math.max(0, lo);
+        if (hi - lo < 1e-9) { hi = lo + 0.01; }
+        var span = hi - lo;
+        lo -= span * 0.04; hi += span * 0.04; span = hi - lo;
+        lo = Math.max(0, lo);
+        function X(x) { return padL + ((x - lo) / span) * (W - padL - padR); }
+        var pathA = curvePath(r.pA, r.seA, lo, hi, padL, W - padR, base, top);
+        var pathB = curvePath(r.pB, r.seB, lo, hi, padL, W - padR, base, top);
+        var fillA = pathA + " L" + X(hi) + "," + base + " L" + X(lo) + "," + base + " Z";
+        var fillB = pathB + " L" + X(hi) + "," + base + " L" + X(lo) + "," + base + " Z";
+        var ticks = niceTicks(lo, hi, 5);
+        var s = "";
+        s += '<svg class="chart" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Sampling distributions of the two conversion rates">';
+        ticks.forEach(function (t) {
+          s += '<line x1="' + X(t) + '" y1="' + base + '" x2="' + X(t) + '" y2="' + (base + 5) + '" stroke="var(--line)" stroke-width="1"/>';
+          s += '<text class="axis-label" x="' + X(t) + '" y="' + (base + 22) + '" text-anchor="middle">' + (t * 100).toFixed(1) + "%</text>";
+        });
+        s += '<line x1="' + padL + '" y1="' + base + '" x2="' + (W - padR) + '" y2="' + base + '" stroke="var(--line)" stroke-width="1"/>';
+        s += '<path d="' + fillA + '" fill="var(--a)" opacity="0.14" stroke="none"/>';
+        s += '<path d="' + fillB + '" fill="var(--b)" opacity="0.14" stroke="none"/>';
+        s += '<path d="' + pathA + '" fill="none" stroke="var(--a)" stroke-width="2.5"/>';
+        s += '<path d="' + pathB + '" fill="none" stroke="var(--b)" stroke-width="2.5"/>';
+        s += '<line x1="' + X(r.pA) + '" y1="' + (top + 8) + '" x2="' + X(r.pA) + '" y2="' + base + '" stroke="var(--a)" stroke-width="1.5" stroke-dasharray="4 4"/>';
+        s += '<line x1="' + X(r.pB) + '" y1="' + (top + 8) + '" x2="' + X(r.pB) + '" y2="' + base + '" stroke="var(--b)" stroke-width="1.5" stroke-dasharray="4 4"/>';
+        var aAnchor = r.pA <= r.pB ? "end" : "start";
+        var bAnchor = r.pA <= r.pB ? "start" : "end";
+        var aOff = r.pA <= r.pB ? -8 : 8;
+        var bOff = r.pA <= r.pB ? 8 : -8;
+        s += '<text class="curve-label" fill="var(--a)" x="' + (X(r.pA) + aOff) + '" y="' + (top - 8) + '" text-anchor="' + aAnchor + '">A · ' + fmtPct(r.pA) + "</text>";
+        s += '<text class="curve-label" fill="var(--b)" x="' + (X(r.pB) + bOff) + '" y="' + (top - 8) + '" text-anchor="' + bAnchor + '">B · ' + fmtPct(r.pB) + "</text>";
+        s += "</svg>";
+        els.curveChart.innerHTML = s;
+      }
+
+      function drawCi(r, confPct) {
+        var W = 720, H = 96, cy = 46, padL = 46, padR = 46;
+        var ext = Math.max(Math.abs(r.ciLo), Math.abs(r.ciHi), Math.abs(r.diff)) * 1.25;
+        if (!(ext > 0)) ext = 0.01;
+        var lo = -ext, hi = ext;
+        function X(x) { return padL + ((x - lo) / (hi - lo)) * (W - padL - padR); }
+        var color = "var(--muted)";
+        if (r.significant && r.diff > 0) color = "var(--good)";
+        else if (r.significant && r.diff < 0) color = "var(--bad)";
+        else if (r.ciLo > 0 || r.ciHi < 0) color = "var(--good)";
+        var s = "";
+        s += '<svg class="chart" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Confidence interval for the difference in conversion rates">';
+        s += '<line x1="' + X(0) + '" y1="12" x2="' + X(0) + '" y2="' + (H - 22) + '" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"/>';
+        s += '<text class="axis-label" x="' + X(0) + '" y="' + (H - 6) + '" text-anchor="middle">no difference (0)</text>';
+        [-ext, -ext / 2, ext / 2, ext].forEach(function (t) {
+          s += '<text class="axis-label" x="' + X(t) + '" y="' + (H - 6) + '" text-anchor="middle">' + (t > 0 ? "+" : "") + (t * 100).toFixed(1) + " pts</text>";
+        });
+        s += '<line x1="' + X(r.ciLo) + '" y1="' + cy + '" x2="' + X(r.ciHi) + '" y2="' + cy + '" stroke="' + color + '" stroke-width="4" stroke-linecap="round"/>';
+        s += '<line x1="' + X(r.ciLo) + '" y1="' + (cy - 10) + '" x2="' + X(r.ciLo) + '" y2="' + (cy + 10) + '" stroke="' + color + '" stroke-width="3"/>';
+        s += '<line x1="' + X(r.ciHi) + '" y1="' + (cy - 10) + '" x2="' + X(r.ciHi) + '" y2="' + (cy + 10) + '" stroke="' + color + '" stroke-width="3"/>';
+        s += '<circle cx="' + X(r.diff) + '" cy="' + cy + '" r="6.5" fill="' + color + '" stroke="var(--surface)" stroke-width="2"/>';
+        s += '<text class="axis-label" x="' + X(r.diff) + '" y="' + (cy - 18) + '" text-anchor="middle" fill="' + color + '" font-weight="600">' + fmtSignedPctPoints(r.diff) + "</text>";
+        s += "</svg>";
+        els.ciChart.innerHTML = s;
+        els.ciNote.textContent =
+          confPct + "% confidence interval for B − A: " + fmtSignedPctPoints(r.ciLo) + " to " + fmtSignedPctPoints(r.ciHi) + ". " +
+          (r.ciLo > 0
+            ? "The entire interval is above zero — B is ahead across the plausible range."
+            : r.ciHi < 0
+              ? "The entire interval is below zero — B trails A across the plausible range."
+              : "The interval crosses zero — the data is compatible with no difference, or with B modestly ahead or behind.");
+      }
+
+      /* ---------- Render ---------- */
+      function setTilesEmpty() {
+        [els.tAbs, els.tRel, els.tP, els.tZ, els.tCi, els.tProb].forEach(function (e) {
+          e.textContent = "—";
+          e.className = "t-value";
+        });
+      }
+      function update() {
+        var nA = readNum(els.nA), xA = readNum(els.xA);
+        var nB = readNum(els.nB), xB = readNum(els.xB);
+        var alpha = parseFloat(els.alpha.value);
+        var confPct = Math.round((1 - alpha) * 100);
+        var nameA = els.nameA.value.trim() || "A";
+        var nameB = els.nameB.value.trim() || "B";
+        els.legA.textContent = nameA;
+        els.legB.textContent = nameB;
+
+        var problem = "";
+        [["A", nA, xA], ["B", nB, xB]].forEach(function (v) {
+          if (isNaN(v[1]) || isNaN(v[2])) problem = "Enter visitors and conversions for both variants.";
+          else if (v[1] <= 0) problem = "Variant " + v[0] + " needs at least 1 visitor.";
+          else if (v[2] < 0 || v[2] > v[1]) problem = "Variant " + v[0] + ": conversions must be between 0 and the visitor count.";
+        });
+        if (problem) {
+          els.err.textContent = problem;
+          els.err.classList.add("show");
+          els.verdict.className = "verdict";
+          els.vTitle.textContent = "Check the inputs";
+          els.vBody.textContent = problem;
+          els.vNote.hidden = true;
+          setTilesEmpty();
+          els.srm.hidden = true;
+          els.curveChart.innerHTML = "";
+          els.ciChart.innerHTML = "";
+          els.ciNote.textContent = "";
+          lastResult = null;
+          updatePlanner();
+          return;
+        }
+        els.err.classList.remove("show");
+
+        var r = runTest(nA, xA, nB, xB, alpha, twoSided);
+        var srm = srmCheck(nA, nB);
+        lastResult = { r: r, nA: nA, xA: xA, nB: nB, xB: xB, alpha: alpha, nameA: nameA, nameB: nameB, srm: srm, twoSided: twoSided };
+
+        /* SRM banner */
+        els.srm.hidden = false;
+        if (srm.mismatch) {
+          els.srm.className = "srm alert";
+          els.srmTitle.textContent = "Sample ratio mismatch — these results may be invalid";
+          els.srmBody.textContent =
+            "The visitor split is " + fmtPct(srm.shareA, 1) + " / " + fmtPct(srm.shareB, 1) +
+            " (" + fmtInt(nA) + " vs. " + fmtInt(nB) + " visitors), but the test was designed for a 50/50 split. " +
+            "Chi-square = " + srm.chi2.toFixed(2) + ", p = " + (srm.p > 0 ? fmtP(srm.p) : "<0.0001") + " — a split this lopsided is significant at the 1% level " +
+            "and almost never happens under correct random assignment. Check the randomization, targeting, or tracking " +
+            "before trusting any result from this test.";
+        } else {
+          els.srm.className = "srm";
+          els.srmTitle.textContent = "Traffic split check (SRM): no mismatch";
+          els.srmBody.textContent =
+            "Observed split " + fmtPct(srm.shareA, 1) + " / " + fmtPct(srm.shareB, 1) +
+            " vs. the expected 50/50 — chi-square = " + srm.chi2.toFixed(2) + ", p = " + fmtP(srm.p) +
+            ". Consistent with correct random assignment.";
+        }
+
+        els.rateA.textContent = fmtPct(r.pA);
+        els.rateB.textContent = fmtPct(r.pB);
+        var barMax = Math.max(r.pA, r.pB, 0.0001);
+        els.barA.style.width = (r.pA / barMax) * 100 + "%";
+        els.barB.style.width = (r.pB / barMax) * 100 + "%";
+
+        /* Verdict */
+        var vClass, title, body, note = "";
+        if (r.significant && r.diff > 0) {
+          vClass = "good";
+          title = "Ship it — " + nameB + " wins";
+          body = nameB + " converts at " + fmtPct(r.pB) + " vs. " + fmtPct(r.pA) + " for " + nameA +
+            " — a relative lift of " + fmtSignedRel(r.rel) + ". The difference is statistically significant at the " +
+            confPct + "% level (p = " + fmtP(r.pVal) + ").";
+          note = "Plausible range for the true lift: " + fmtSignedPctPoints(r.ciLo) + " to " + fmtSignedPctPoints(r.ciHi) +
+            " (" + confPct + "% CI). Ship if the low end still clears your cost of change.";
+        } else if (r.significant && r.diff < 0) {
+          vClass = "bad";
+          title = "Don't ship — " + nameB + " is worse";
+          body = nameB + " converts at " + fmtPct(r.pB) + " vs. " + fmtPct(r.pA) + " for " + nameA +
+            " — a relative change of " + fmtSignedRel(r.rel) + ", and the drop is statistically significant at the " +
+            confPct + "% level (p = " + fmtP(r.pVal) + ").";
+          note = "Rolling this out would be expected to cost conversions. Keep " + nameA + " and investigate why " + nameB + " underperformed before retesting.";
+        } else {
+          vClass = "warn";
+          title = "Not yet — no clear winner";
+          body = "Observed difference: " + fmtSignedPctPoints(r.diff) + " (" + fmtSignedRel(r.rel) + " relative), p = " +
+            fmtP(r.pVal) + ". At the " + confPct + "% level this is within the range random variation produces, so the test can't distinguish the variants yet.";
+          if (Math.abs(r.diff) > 1e-9) {
+            var loRate = Math.min(r.pA, r.pB), hiRate = Math.max(r.pA, r.pB);
+            var need = requiredPerVariant(loRate, hiRate, alpha, 0.8, twoSided);
+            if (isFinite(need) && need <= 50000000) {
+              var perMore = Math.max(0, need - Math.round((nA + nB) / 2));
+              note = "To confirm an effect of the observed size with 80% power, you'd need about " + fmtInt(need) +
+                " visitors per variant — roughly " + fmtInt(perMore) + " more per variant than the current average. " +
+                "If that's impractical, the true effect is likely smaller than your minimum worthwhile lift; consider stopping and testing a bolder change.";
+            } else {
+              note = "The observed difference is so small that confirming it would take an impractical sample size. Treat the variants as equivalent for this metric and decide on other grounds.";
+            }
+          } else {
+            note = "The conversion rates are identical. Run longer only if you expect a difference to emerge; otherwise decide on secondary metrics or cost.";
+          }
+        }
+        els.verdict.className = "verdict " + vClass;
+        els.vTitle.textContent = title;
+        els.vBody.textContent = body;
+        els.vNote.textContent = note;
+        els.vNote.hidden = !note;
+
+        /* Tiles */
+        els.tAbs.textContent = fmtSignedPctPoints(r.diff);
+        els.tAbs.className = "t-value" + (r.diff > 0 ? " pos" : r.diff < 0 ? " neg" : "");
+        els.tRel.textContent = fmtSignedRel(r.rel);
+        els.tRel.className = "t-value" + (r.rel > 0 ? " pos" : r.rel < 0 ? " neg" : "");
+        els.tP.textContent = fmtP(r.pVal);
+        els.tPSub.textContent =
+          (r.useFisher ? "Fisher's exact test (small sample)" : "two-proportion z-test") +
+          (r.significant ? " · below α = " + alpha + " — significant" : " · above α = " + alpha + " — not significant");
+        els.tZ.textContent = (r.z > 0 ? "+" : "") + r.z.toFixed(2);
+        els.tCiLabel.textContent = confPct + "% confidence interval";
+        els.tCi.textContent = fmtSignedPctPoints(r.ciLo) + " to " + fmtSignedPctPoints(r.ciHi);
+        els.tProb.textContent = fmtPct(r.probB, 1);
+
+        drawCurves(r);
+        drawCi(r, confPct);
+        updatePlanner();
+      }
+
+      function updatePlanner() {
+        var base = readNum(els.pBase) / 100;
+        var mde = readNum(els.pMde) / 100;
+        var power = parseFloat(els.pPower.value);
+        var traffic = readNum(els.pTraffic);
+        var alpha = lastResult ? lastResult.alpha : parseFloat(els.alpha.value);
+        var target = base * (1 + mde);
+        if (!(base > 0 && base < 1) || !(mde > 0) || !(target < 1)) {
+          els.pResult.textContent = "—";
+          els.pResultSub.textContent = "Check the planner inputs — baseline × (1 + lift) must stay under 100%.";
+          return;
+        }
+        var need = requiredPerVariant(base, target, alpha, power, twoSided);
+        if (!isFinite(need)) {
+          els.pResult.textContent = "—";
+          els.pResultSub.textContent = "Could not compute — try a larger lift.";
+          return;
+        }
+        els.pResult.textContent = fmtInt(need);
+        var sub = "visitors per variant · " + fmtInt(need * 2) + " total";
+        if (traffic > 0) {
+          var days = (need * 2) / traffic;
+          sub += " · ≈ " + (days < 1 ? "<1" : fmtInt(days)) + (days < 1.5 ? " day" : " days") + " at " + fmtInt(traffic) + " visitors/day";
+        }
+        els.pResultSub.textContent = sub;
+      }
+
+      /* ---------- Events ---------- */
+      [els.nA, els.xA, els.nB, els.xB, els.nameA, els.nameB].forEach(function (el) {
+        el.addEventListener("input", update);
+      });
+      els.alpha.addEventListener("change", update);
+      els.tailTwo.addEventListener("click", function () {
+        twoSided = true;
+        els.tailTwo.setAttribute("aria-pressed", "true");
+        els.tailOne.setAttribute("aria-pressed", "false");
+        update();
+      });
+      els.tailOne.addEventListener("click", function () {
+        twoSided = false;
+        els.tailTwo.setAttribute("aria-pressed", "false");
+        els.tailOne.setAttribute("aria-pressed", "true");
+        update();
+      });
+      document.querySelectorAll("[data-preset]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var p = PRESETS[btn.getAttribute("data-preset")];
+          els.nA.value = p.nA; els.xA.value = p.xA;
+          els.nB.value = p.nB; els.xB.value = p.xB;
+          update();
+        });
+      });
+      [els.pBase, els.pMde, els.pTraffic].forEach(function (el) {
+        el.addEventListener("input", updatePlanner);
+      });
+      els.pPower.addEventListener("change", updatePlanner);
+
+      els.copyBtn.addEventListener("click", function () {
+        if (!lastResult) return;
+        var L = lastResult, r = L.r;
+        var confPct = Math.round((1 - L.alpha) * 100);
+        var lines = [
+          "A/B test result — " + (twoSided ? "two-sided" : "one-sided") + ", " + confPct + "% confidence",
+          L.nameA + ": " + fmtInt(L.xA) + " / " + fmtInt(L.nA) + " visitors converted (" + fmtPct(r.pA) + ")",
+          L.nameB + ": " + fmtInt(L.xB) + " / " + fmtInt(L.nB) + " visitors converted (" + fmtPct(r.pB) + ")",
+          "Absolute lift: " + fmtSignedPctPoints(r.diff) + " · Relative lift: " + fmtSignedRel(r.rel),
+          "z = " + r.z.toFixed(2) + ", p = " + fmtP(r.pVal) + " → " + (r.significant ? "statistically significant" : "not statistically significant"),
+          "Test used: " + r.testUsed + (r.useFisher ? " (small sample — fewer than 100 conversions in a variant)" : ""),
+          confPct + "% CI for the difference: " + fmtSignedPctPoints(r.ciLo) + " to " + fmtSignedPctPoints(r.ciHi),
+          "Verdict: " + els.vTitle.textContent,
+          "SRM check (split vs. expected 50/50): chi-square = " + L.srm.chi2.toFixed(2) + ", p = " + (L.srm.p > 0 ? fmtP(L.srm.p) : "<0.0001") +
+            (L.srm.mismatch ? " — SAMPLE RATIO MISMATCH at the 1% level; results may be invalid" : " — no mismatch"),
+          "Designed & built by Fan (David) Xu"
+        ];
+        var text = lines.join("\n");
+        var settled = false;
+        function finish(msg) {
+          if (settled) return;
+          settled = true;
+          els.copyFeedback.textContent = msg;
+          setTimeout(function () { els.copyFeedback.textContent = ""; }, 2600);
+        }
+        function fallback() {
+          var ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          var ok = false;
+          try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+          document.body.removeChild(ta);
+          finish(ok ? "Copied to clipboard." : "Copy blocked by the browser — the summary could not be copied.");
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          var timer = setTimeout(fallback, 700);
+          navigator.clipboard.writeText(text).then(
+            function () { clearTimeout(timer); finish("Copied to clipboard."); },
+            function () { clearTimeout(timer); fallback(); }
+          );
+        } else {
+          fallback();
+        }
+      });
+
+      /* ---------- CSV: template, upload, export ---------- */
+      function csvCell(v) {
+        v = String(v);
+        return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+      }
+      function downloadCsv(filename, text) {
+        var blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      }
+      function setCsvNote(msg, kind) {
+        els.csvNote.textContent = msg;
+        els.csvNote.className = "csv-note show" + (kind ? " " + kind : "");
+      }
+      /* Minimal RFC-4180-style parser: quotes, escaped quotes, CRLF, BOM */
+      function parseCsv(text) {
+        text = text.replace(/^\uFEFF/, "");
+        var rows = [], row = [], field = "", inQ = false, i, c;
+        for (i = 0; i < text.length; i++) {
+          c = text[i];
+          if (inQ) {
+            if (c === '"') {
+              if (text[i + 1] === '"') { field += '"'; i++; } else inQ = false;
+            } else field += c;
+          } else if (c === '"') inQ = true;
+          else if (c === ",") { row.push(field); field = ""; }
+          else if (c === "\n") { row.push(field); field = ""; rows.push(row); row = []; }
+          else if (c !== "\r") field += c;
+        }
+        if (field.length || row.length) { row.push(field); rows.push(row); }
+        return rows.filter(function (r) {
+          return r.some(function (cell) { return cell.trim() !== ""; });
+        });
+      }
+      function csvNumber(s) {
+        var v = parseFloat(String(s).replace(/[^0-9.\-]/g, ""));
+        return isNaN(v) ? NaN : v;
+      }
+      function handleCsv(text) {
+        var rows = parseCsv(text);
+        if (rows.length < 2) {
+          setCsvNote("That file has no data rows — it needs a header row (variant, visitors, conversions) plus at least two variant rows.", "bad");
+          return;
+        }
+        var head = rows[0].map(function (h) { return h.trim().toLowerCase(); });
+        var iVar = head.indexOf("variant"), iVis = head.indexOf("visitors"), iConv = head.indexOf("conversions");
+        if (iVis < 0 || iConv < 0) {
+          setCsvNote("Couldn't find the columns — the header row must include variant, visitors and conversions.", "bad");
+          return;
+        }
+        var parsed = [], badRow = 0;
+        for (var i = 1; i < rows.length; i++) {
+          var cells = rows[i];
+          var n = csvNumber(cells[iVis]), x = csvNumber(cells[iConv]);
+          if (isNaN(n) || isNaN(x) || n <= 0 || x < 0 || x > n) { badRow = i + 1; break; }
+          parsed.push({
+            name: iVar >= 0 ? String(cells[iVar] || "").trim() : "",
+            n: Math.round(n), x: Math.round(x)
+          });
+        }
+        if (badRow) {
+          setCsvNote("Row " + badRow + " doesn't parse — visitors must be a positive number and conversions between 0 and the visitor count. Nothing was loaded.", "bad");
+          return;
+        }
+        if (parsed.length < 2) {
+          setCsvNote("Found fewer than two valid variant rows — nothing was loaded.", "bad");
+          return;
+        }
+        var first = parsed[0], second = parsed[1];
+        els.nameA.value = first.name || "Control (A)";
+        els.nA.value = first.n; els.xA.value = first.x;
+        els.nameB.value = second.name || "Variant (B)";
+        els.nB.value = second.n; els.xB.value = second.x;
+        update();
+        if (parsed.length > 2) {
+          setCsvNote(
+            "The file lists " + parsed.length + " variants. Only the first two — " +
+            (first.name || "Control (A)") + " and " + (second.name || "Variant (B)") +
+            " — were loaded; this calculator analyzes two variants at a time.",
+            "warn"
+          );
+        } else {
+          setCsvNote("Loaded " + (first.name || "Control (A)") + " and " + (second.name || "Variant (B)") + " from the CSV.");
+        }
+      }
+
+      els.uploadBtn.addEventListener("click", function () { els.csvFile.click(); });
+      els.csvFile.addEventListener("change", function () {
+        var f = els.csvFile.files && els.csvFile.files[0];
+        els.csvFile.value = "";
+        if (!f) return;
+        var reader = new FileReader();
+        reader.onload = function () { handleCsv(String(reader.result || "")); };
+        reader.onerror = function () { setCsvNote("Could not read that file.", "bad"); };
+        reader.readAsText(f);
+      });
+      els.templateBtn.addEventListener("click", function () {
+        downloadCsv("ab-test-template.csv", "variant,visitors,conversions\nControl,10000,1200\n");
+      });
+      els.exportBtn.addEventListener("click", function () {
+        if (!lastResult) return;
+        var L = lastResult, r = L.r;
+        var confPct = Math.round((1 - L.alpha) * 100);
+        function num(v, d) { return isFinite(v) ? Number(v.toFixed(d)) : ""; }
+        var rows = [
+          ["field", "value"],
+          ["designed_by", "Fan (David) Xu"],
+          ["confidence_level_pct", confPct],
+          ["hypothesis", L.twoSided ? "two-sided (B != A)" : "one-sided (B > A)"],
+          ["test_used", r.testUsed + (r.useFisher ? " (small sample: fewer than 100 conversions in a variant)" : "")],
+          ["variant_a_name", L.nameA],
+          ["variant_a_visitors", L.nA],
+          ["variant_a_conversions", L.xA],
+          ["variant_a_conversion_rate_pct", num(r.pA * 100, 4)],
+          ["variant_b_name", L.nameB],
+          ["variant_b_visitors", L.nB],
+          ["variant_b_conversions", L.xB],
+          ["variant_b_conversion_rate_pct", num(r.pB * 100, 4)],
+          ["absolute_lift_points", num(r.diff * 100, 4)],
+          ["relative_lift_pct", num(r.rel * 100, 4)],
+          ["p_value", num(r.pVal, 6)],
+          ["z_score", num(r.z, 4)],
+          ["ci_level_pct", confPct],
+          ["ci_lower_points", num(r.ciLo * 100, 4)],
+          ["ci_upper_points", num(r.ciHi * 100, 4)],
+          ["significant", r.significant ? "yes" : "no"],
+          ["verdict", els.vTitle.textContent],
+          ["srm_expected_split", "50/50"],
+          ["srm_observed_split_a_pct", num(L.srm.shareA * 100, 2)],
+          ["srm_observed_split_b_pct", num(L.srm.shareB * 100, 2)],
+          ["srm_chi_square", num(L.srm.chi2, 4)],
+          ["srm_p_value", num(L.srm.p, 6)],
+          ["srm_result", L.srm.mismatch ? "Sample ratio mismatch (significant at the 1% level) - results may be invalid" : "No mismatch"]
+        ];
+        var text = rows.map(function (row) { return row.map(csvCell).join(","); }).join("\n") + "\n";
+        downloadCsv("ab-test-analysis.csv", text);
+      });
+
+      update();
+    </script>
+  </body>
+</html>

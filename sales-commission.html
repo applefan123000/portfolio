@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Sales Commission Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root{
+        --bg:#f4f2ec; --surface:#ffffff; --surface2:#faf8f3;
+        --ink:#182420; --muted:#5d6a62; --faint:#8a958c;
+        --line:#ddd7c9; --line2:#e9e4d6;
+        --a:#0d7a5c; --a-dark:#095c44; --a-soft:#e2efe8;
+        --b:#b96a00; --b-dark:#96560a; --b-soft:#f8ecda;
+        --neg:#b3352b; --shadow:0 1px 2px rgba(24,36,32,.06),0 8px 24px -12px rgba(24,36,32,.18);
+        --radius:14px;
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --bg:#10140f; --surface:#1a201a; --surface2:#212822;
+          --ink:#e9ede7; --muted:#a3ada1; --faint:#79847a;
+          --line:#333d33; --line2:#2a332a;
+          --a:#3ec79e; --a-dark:#3ec79e; --a-soft:#173328;
+          --b:#eda33c; --b-dark:#eda33c; --b-soft:#3a2c14;
+          --neg:#e2705f; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -12px rgba(0,0,0,.6);
+        }
+      }
+      *{box-sizing:border-box}
+      html{scroll-behavior:smooth}
+      body{margin:0;background:var(--bg);color:var(--ink);font-family:"Manrope",system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+      .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+      .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 64px}
+      header.top{margin-bottom:26px}
+      header.top h1{font-size:clamp(26px,4.5vw,38px);font-weight:800;letter-spacing:-.02em;margin:0 0 8px;line-height:1.12}
+      header.top p{margin:0;color:var(--muted);max-width:720px;font-size:16px}
+      header.top p strong{color:var(--ink)}
+      section{margin-top:34px}
+      .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+      .sec-head .n{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;color:var(--a-dark);background:var(--a-soft);border-radius:999px;padding:2px 10px}
+      .sec-head h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin:0}
+      .sec-head p{margin:0;color:var(--muted);font-size:13.5px}
+      .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+      /* plans */
+      .plans{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+      .plan{padding:20px}
+      .plan .p-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+      .plan .dot{width:12px;height:12px;border-radius:50%;flex:none}
+      .plan-a .dot{background:var(--a)} .plan-b .dot{background:var(--b)}
+      .plan h3{margin:0;font-size:17px;font-weight:800}
+      .plan .p-sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+      .plan select.preset{width:100%;margin-bottom:14px}
+      .frow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px dashed var(--line2)}
+      .frow:first-of-type{border-top:none}
+      .frow label{font-size:13.5px;font-weight:600;color:var(--ink)}
+      .frow label small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+      .inwrap{display:flex;align-items:center;gap:4px;flex:none}
+      .inwrap .pre,.inwrap .suf{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--muted)}
+      input[type=number],input[type=text],select{font-family:inherit;font-size:14px;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+      input[type=number]{width:96px;text-align:right;font-family:"IBM Plex Mono",monospace}
+      input[type=number]:focus,input[type=text]:focus,select:focus{outline:2px solid var(--a);outline-offset:1px;border-color:transparent}
+      .plan-b input:focus,.plan-b select:focus{outline-color:var(--b)}
+      select{padding:7px 8px;font-weight:600}
+      .tiers{margin:12px 0 4px;border:1px solid var(--line2);border-radius:10px;overflow:hidden}
+      .tiers table{width:100%;border-collapse:collapse;font-size:13.5px}
+      .tiers th{background:var(--surface2);text-align:left;font-size:11.5px;letter-spacing:.04em;color:var(--muted);padding:7px 10px;font-weight:700}
+      .tiers td{padding:6px 10px;border-top:1px solid var(--line2)}
+      .tiers td.band{font-weight:600;white-space:nowrap}
+      .tiers input[type=number]{width:72px;padding:5px 7px}
+      .total-line{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px;padding-top:12px;border-top:2px solid var(--line)}
+      .total-line .lab{font-size:13px;font-weight:700;color:var(--muted)}
+      .total-line .val{font-family:"IBM Plex Mono",monospace;font-size:21px;font-weight:600}
+      .plan-a .total-line .val{color:var(--a-dark)} .plan-b .total-line .val{color:var(--b-dark)}
+      /* team */
+      .team-grid{display:grid;grid-template-columns:1.65fr 1fr;gap:18px;align-items:start}
+      .roster{padding:8px 0 4px;overflow:hidden}
+      .roster table{width:100%;border-collapse:collapse}
+      .roster th{text-align:left;font-size:11.5px;letter-spacing:.04em;color:var(--muted);padding:10px 16px 6px;font-weight:700}
+      .roster th.r,.roster td.r{text-align:right}
+      .roster td{padding:4px 10px;border-top:1px solid var(--line2)}
+      .roster td:first-child{padding-left:16px}
+      .roster input[type=text]{width:100%;border-color:transparent;background:transparent;font-weight:600;padding:6px 6px}
+      .roster input[type=number]{width:110px;border-color:transparent;background:transparent}
+      .roster input:hover{border-color:var(--line)}
+      .roster input:focus{background:var(--surface2)}
+      .roster .att{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--muted);white-space:nowrap}
+      .rm{border:none;background:none;color:var(--faint);font-size:17px;cursor:pointer;padding:4px 6px;line-height:1;border-radius:6px}
+      .rm:hover{color:var(--neg);background:var(--surface2)}
+      .roster-foot{display:flex;gap:10px;flex-wrap:wrap;padding:12px 16px 14px;border-top:1px solid var(--line2)}
+      .side{display:flex;flex-direction:column;gap:18px}
+      .side .card{padding:18px 20px}
+      .side h4{margin:0 0 6px;font-size:14.5px;font-weight:800}
+      .side p{margin:0 0 12px;color:var(--muted);font-size:13px}
+      input[type=range]{width:100%;accent-color:var(--a);margin:6px 0 2px}
+      .scale-val{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:15px}
+      .btn{font-family:inherit;font-weight:700;font-size:13.5px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;cursor:pointer}
+      .btn:hover{border-color:var(--faint)}
+      .btn.primary{background:var(--a);border-color:var(--a);color:#fff}
+      @media (prefers-color-scheme: dark){.btn.primary{color:#0c1512}}
+      .btn.primary:hover{background:var(--a-dark)}
+      .btn.small{padding:6px 11px;font-size:12.5px}
+      .btnrow{display:flex;gap:8px;flex-wrap:wrap}
+      .filelab{display:inline-block}
+      input[type=file]{display:none}
+      /* KPIs */
+      .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+      .kpi{padding:16px 18px}
+      .kpi .lab{font-size:12px;font-weight:700;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+      .kpi .pair{display:flex;gap:18px;align-items:baseline;flex-wrap:wrap}
+      .kpi .v{font-family:"IBM Plex Mono",monospace;font-size:19px;font-weight:600}
+      .kpi .v small{display:block;font-family:"Manrope",sans-serif;font-size:11px;font-weight:700;letter-spacing:.04em}
+      .kpi .v.a{color:var(--a-dark)} .kpi .v.b{color:var(--b-dark)}
+      .kpi .delta{margin-top:8px;font-size:13px;font-weight:700}
+      .kpi .delta.up{color:var(--neg)} .kpi .delta.down{color:var(--a-dark)} .kpi .delta.flat{color:var(--muted)}
+      .kpi .single{font-family:"IBM Plex Mono",monospace;font-size:24px;font-weight:600}
+      .kpi .sub{font-size:12.5px;color:var(--muted);margin-top:4px}
+      .insights{margin-top:14px;padding:16px 20px}
+      .insights h4{margin:0 0 8px;font-size:14px;font-weight:800}
+      .insights ul{margin:0;padding-left:18px;color:var(--ink);font-size:14px}
+      .insights li{margin:3px 0}
+      .insights li span{color:var(--muted)}
+      /* charts */
+      .charts{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+      .chart-card{padding:18px 20px 12px}
+      .chart-card h4{margin:0;font-size:15px;font-weight:800}
+      .chart-card .csub{color:var(--muted);font-size:12.5px;margin:2px 0 8px}
+      .chart-card svg{width:100%;height:auto;display:block}
+      .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;font-weight:600;color:var(--muted);margin-top:6px}
+      .legend .sw{display:inline-block;width:14px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
+      .legend .swd{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:6px}
+      /* results table */
+      .results{overflow:hidden}
+      .results table{width:100%;border-collapse:collapse;font-size:14px}
+      .results th{text-align:right;font-size:11.5px;letter-spacing:.04em;color:var(--muted);padding:12px 14px 8px;font-weight:700;border-bottom:2px solid var(--line);white-space:nowrap}
+      .results th:first-child{text-align:left}
+      .results td{padding:9px 14px;border-top:1px solid var(--line2);text-align:right;font-family:"IBM Plex Mono",monospace;font-size:13.5px;white-space:nowrap}
+      .results td:first-child{text-align:left;font-family:"Manrope",sans-serif;font-weight:700;font-size:14px}
+      .results tr.tot td{border-top:2px solid var(--line);font-weight:600;background:var(--surface2)}
+      .results .pos{color:var(--a-dark);font-weight:600}
+      .results .negv{color:var(--neg);font-weight:600}
+      .tag{display:inline-block;font-family:"Manrope",sans-serif;font-size:10px;font-weight:800;letter-spacing:.05em;padding:1px 6px;border-radius:5px;margin-left:6px;vertical-align:2px}
+      .tag.cap{background:#f6ddd9;color:var(--neg)}
+      .tag.kick{background:var(--b-soft);color:var(--b-dark)}
+      @media (prefers-color-scheme: dark){.tag.cap{background:#3d201c}}
+      .tag.win-a{background:var(--a-soft);color:var(--a-dark)}
+      .tag.win-b{background:var(--b-soft);color:var(--b-dark)}
+      details.how{margin-top:14px;padding:16px 20px}
+      details.how summary{font-weight:800;font-size:14.5px;cursor:pointer}
+      details.how div{color:var(--muted);font-size:13.5px;margin-top:10px;max-width:860px}
+      details.how div p{margin:6px 0}
+      details.how b{color:var(--ink)}
+      .empty{padding:28px;text-align:center;color:var(--muted)}
+      footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+      /* responsive */
+      @media (max-width:980px){
+        .plans,.team-grid,.charts{grid-template-columns:1fr}
+        .kpis{grid-template-columns:1fr 1fr}
+      }
+      @media (max-width:640px){
+        .wrap{padding:20px 14px 48px}
+        .kpis{grid-template-columns:1fr}
+        input[type=number]{width:86px}
+        .roster input[type=number]{width:96px}
+        /* results table becomes stacked rows: name on top, A / B / Δ as labelled stats */
+        .results thead{display:none}
+        .results table,.results tbody{display:block}
+        .results tr{display:flex;flex-wrap:wrap;align-items:flex-end;column-gap:18px;padding:10px 14px 12px;border-top:1px solid var(--line2)}
+        .results tr.tot{background:var(--surface2)}
+        .results td{display:block;border-top:none;padding:1px 0;text-align:left}
+        .results td:first-child{flex:0 0 100%;white-space:normal;margin-bottom:4px}
+        .results td[data-label]::before{content:attr(data-label);display:block;font-family:"Manrope",sans-serif;font-size:10px;font-weight:800;letter-spacing:.05em;color:var(--muted);margin-bottom:1px}
+        .results td.col-att,.results td.col-win{display:none}
+        /* roster: drop the attainment column at phone width so the remove buttons stay reachable */
+        .roster .col-att{display:none}
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <h1>Sales Commission Simulator</h1>
+        <p>Design a commission plan, run it against a sales team, and see exactly what it costs. Build <strong>Plan A</strong> and <strong>Plan B</strong> — tiered rates, accelerators, caps — then compare total payout, cost as a share of revenue, and who wins or loses under each plan. Every number recalculates as you type.</p>
+      </header>
+
+      <!-- ============ 1 · PLANS ============ -->
+      <section aria-label="Plan design">
+        <div class="sec-head">
+          <span class="n">Step 1</span>
+          <h2>Design the two plans</h2>
+          <p>Rates apply to sales in each attainment band. Start from a preset, then fine-tune.</p>
+        </div>
+        <div class="plans" id="plans"></div>
+
+        <details class="how card">
+          <summary>How payouts are calculated</summary>
+          <div>
+            <p><b>Attainment</b> = a rep's sales ÷ quota. The four rate bands key off attainment: below 80%, 80–100%, 100–120% (the accelerator zone), and above 120%.</p>
+            <p><b>Marginal (bracket) mode</b> — each band's rate applies only to the sales inside that band, like income-tax brackets. A rep at 130% attainment earns the top rate only on the slice above 120%.</p>
+            <p><b>Retroactive mode</b> — the rate of the highest band reached applies to <i>all</i> of the rep's sales. Simpler to explain, but a rep sitting at 99% attainment has a much bigger cliff to jump than in marginal mode.</p>
+            <p><b>Kicker</b> — a flat bonus paid once attainment reaches the kicker threshold. <b>Floor</b> — a guaranteed minimum payout (a draw/guarantee). <b>Cap</b> — the maximum any rep can earn; applied last, after the floor.</p>
+            <p><b>SPIFF / bonus</b> — a one-time amount set per rep in the roster. It is added to the payout after the floor and cap are applied, so even a capped rep receives it in full. The same SPIFF applies under both plans, so it raises both totals equally and never changes the B − A gap.</p>
+          </div>
+        </details>
+      </section>
+
+      <!-- ============ 2 · TEAM ============ -->
+      <section aria-label="Sales team">
+        <div class="sec-head">
+          <span class="n">Step 2</span>
+          <h2>Load the team</h2>
+          <p>Edit the sample roster, add reps, or upload your own CSV (columns: name, sales, optional spiff).</p>
+        </div>
+        <div class="team-grid">
+          <div class="card roster">
+            <table aria-label="Rep roster">
+              <thead><tr>
+                <th>Rep</th><th class="r">Sales ($)</th><th class="r">SPIFF / bonus ($)</th><th class="r col-att">vs Plan A quota</th><th></th>
+              </tr></thead>
+              <tbody id="rosterBody"></tbody>
+            </table>
+            <div class="roster-foot">
+              <button class="btn small" id="addRep" type="button">+ Add rep</button>
+              <button class="btn small" id="resetReps" type="button">Reset sample team</button>
+            </div>
+          </div>
+          <div class="side">
+            <div class="card">
+              <h4>Scenario: scale team sales</h4>
+              <p>Simulate a strong or weak quarter without editing every row. Applies to all calculations.</p>
+              <div class="scale-val" id="scaleVal">× 1.00 — as entered</div>
+              <input type="range" id="scale" min="50" max="150" step="5" value="100" aria-label="Scale all sales" />
+              <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted)"><span>−50%</span><span>as entered</span><span>+50%</span></div>
+            </div>
+            <div class="card">
+              <h4>Your own roster</h4>
+              <p>Upload a CSV with a header row — <span class="mono">name,sales</span>, plus an optional third column, <span class="mono">spiff</span>, for one-time bonuses — or grab the template and fill it in.</p>
+              <div class="btnrow">
+                <label class="btn small filelab" for="csvFile">Upload CSV</label>
+                <input type="file" id="csvFile" accept=".csv,text/csv" />
+                <button class="btn small" id="dlTemplate" type="button">Download template</button>
+              </div>
+              <p id="csvMsg" style="margin:10px 0 0;font-size:12.5px" aria-live="polite"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 3 · RESULTS ============ -->
+      <section aria-label="Results">
+        <div class="sec-head">
+          <span class="n">Step 3</span>
+          <h2>Compare the cost</h2>
+          <p id="resultsNote">Live results for the current plans and roster.</p>
+        </div>
+        <div class="kpis" id="kpis"></div>
+        <div class="card insights" id="insights"></div>
+
+        <div class="charts" style="margin-top:18px">
+          <div class="card chart-card">
+            <h4>Payout curve</h4>
+            <p class="csub">What a rep earns at each sales level under each plan. Dots are your actual reps.</p>
+            <div id="curveChart"></div>
+            <div class="legend">
+              <span><span class="sw" style="background:var(--a)"></span>Plan A</span>
+              <span><span class="sw" style="background:var(--b)"></span>Plan B</span>
+              <span><span class="swd" style="background:var(--a)"></span><span class="swd" style="background:var(--b)"></span>Reps</span>
+            </div>
+          </div>
+          <div class="card chart-card">
+            <h4>Payout by rep</h4>
+            <p class="csub">Commission per rep under each plan, highest sales first.</p>
+            <div id="barsChart"></div>
+            <div class="legend">
+              <span><span class="sw" style="background:var(--a)"></span>Plan A</span>
+              <span><span class="sw" style="background:var(--b)"></span>Plan B</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card results" style="margin-top:18px">
+          <table aria-label="Per-rep results">
+            <thead><tr>
+              <th>Rep</th>
+              <th>Sales</th>
+              <th class="col-att">Attainment*</th>
+              <th>SPIFF / bonus</th>
+              <th>Plan A pays</th>
+              <th>Plan B pays</th>
+              <th>Δ B − A</th>
+              <th class="col-win">Better off</th>
+            </tr></thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+        <p style="color:var(--muted);font-size:12.5px;margin:8px 2px 0">*Attainment uses each plan's own quota; the column shows Plan A's. SPIFF / bonus is a one-time amount added to each plan's payout after caps and floors, and is included in the Plan A / Plan B totals. <span class="tag cap">CAP</span> = payout hit the plan cap. <span class="tag kick">KICKER</span> = threshold bonus earned.</p>
+        <div class="btnrow" style="margin-top:14px">
+          <button class="btn primary" id="dlResults" type="button">Download results (CSV)</button>
+        </div>
+      </section>
+
+      <footer>
+        <span>Portfolio demo by Fan (David) Xu — Senior Business Analyst, sales compensation &amp; performance programs.</span>
+        <span>Sample roster is illustrative; upload your own CSV to model a real team. Nothing leaves your browser.</span>
+      </footer>
+    </div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s){ return document.querySelector(s); };
+
+  /* ---------- formatting ---------- */
+  function money(v){ var s = Math.abs(Math.round(v)).toLocaleString("en-US"); return (v<0?"-$":"$")+s; }
+  function pct(v,d){ if(d===undefined)d=1; return (v*100).toFixed(d)+"%"; }
+  function signedMoney(v){ if(Math.round(v)===0) return "$0"; return (v>0?"+":"−")+money(Math.abs(v)).replace("-",""); }
+  function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+  function niceMax(v){
+    if(v<=0) return 1;
+    var p = Math.pow(10, Math.floor(Math.log10(v)));
+    var n = v/p;
+    var m = n<=1?1 : n<=2?2 : n<=2.5?2.5 : n<=5?5 : 10;
+    return m*p;
+  }
+
+  /* ---------- state ---------- */
+  var EDGES = [0.8, 1.0, 1.2]; /* attainment band boundaries */
+  var PRESETS = {
+    balanced:   { label:"Balanced tiers", quota:100000, rates:[4,6,9,12],   mode:"marginal", cap:0,     floor:0,    kickerAt:120, kickerAmt:1500 },
+    accelerator:{ label:"Aggressive accelerator", quota:100000, rates:[2.5,5,11,16], mode:"marginal", cap:45000, floor:0, kickerAt:120, kickerAmt:2500 },
+    flat:       { label:"Simple flat rate", quota:100000, rates:[6,6,6,6],  mode:"marginal", cap:0,     floor:0,    kickerAt:120, kickerAmt:0 },
+    capped:     { label:"High rate, hard cap", quota:100000, rates:[5,7,10,13], mode:"retro",  cap:30000, floor:1000, kickerAt:110, kickerAmt:1000 },
+    custom:     { label:"Custom" }
+  };
+  function clonePlan(p){ return { quota:p.quota, rates:p.rates.slice(), mode:p.mode, cap:p.cap, floor:p.floor, kickerAt:p.kickerAt, kickerAmt:p.kickerAmt }; }
+  var plans = {
+    A: clonePlan(PRESETS.balanced),
+    B: { quota:100000, rates:[3,5,10,15], mode:"marginal", cap:40000, floor:0, kickerAt:120, kickerAmt:2000 }
+  };
+  var SAMPLE = [
+    ["Ava Chen",182400],["Marcus Webb",164900],["Priya Nair",151200],["Tom Okafor",133750],
+    ["Lena Fischer",121300],["Diego Ramos",108600],["Sarah Kim",99800],["Ben Osei",92400],
+    ["Julia Novak",85600],["Chris Doyle",71300],["Fatima Al-Sayed",54800],["Noah Tremblay",38900]
+  ];
+  var reps = SAMPLE.map(function(r){ return { name:r[0], sales:r[1], spiff:0 }; });
+  var scale = 1;
+
+  /* ---------- core math ---------- */
+  function payout(plan, sales){
+    sales = Math.max(0, sales||0);
+    var quota = Math.max(1, plan.quota||1);
+    var att = sales/quota;
+    var comm = 0, i, lower, upper;
+    if(plan.mode === "retro"){
+      var idx = att>=EDGES[2]?3 : att>=EDGES[1]?2 : att>=EDGES[0]?1 : 0;
+      comm = sales * plan.rates[idx]/100;
+    } else {
+      for(i=0;i<4;i++){
+        lower = quota * (i===0?0:EDGES[i-1]);
+        upper = (i===3) ? Infinity : quota*EDGES[i];
+        var inBand = Math.min(sales, upper) - lower;
+        if(inBand>0) comm += inBand * plan.rates[i]/100;
+      }
+    }
+    var kicked = plan.kickerAmt>0 && att >= plan.kickerAt/100;
+    if(kicked) comm += plan.kickerAmt;
+    var pay = Math.max(comm, plan.floor||0);
+    var capped = false;
+    if(plan.cap>0 && pay>plan.cap){ pay = plan.cap; capped = true; }
+    return { pay:pay, att:att, capped:capped, kicked:kicked };
+  }
+
+  /* ---------- plan cards ---------- */
+  var BAND_LABELS = ["Below 80% of quota","80% – 100% of quota","100% – 120% · accelerator","Above 120% · top band"];
+  function planCard(key){
+    var isA = key==="A";
+    var presetOpts = Object.keys(PRESETS).map(function(k){
+      return '<option value="'+k+'">'+PRESETS[k].label+'</option>';
+    }).join("");
+    var tierRows = BAND_LABELS.map(function(l,i){
+      return '<tr><td class="band">'+l+'</td><td style="text-align:right"><span class="inwrap"><input type="number" min="0" step="0.25" data-plan="'+key+'" data-rate="'+i+'" aria-label="Plan '+key+' band '+(i+1)+' rate"><span class="suf">%</span></span></td></tr>';
+    }).join("");
+    return ''+
+    '<div class="card plan '+(isA?"plan-a":"plan-b")+'" data-card="'+key+'">'+
+      '<div class="p-head"><span class="dot"></span><h3>Plan '+key+'</h3></div>'+
+      '<p class="p-sub">'+(isA?"The plan you have today.":"The plan you are considering.")+'</p>'+
+      '<select class="preset" data-plan="'+key+'" aria-label="Plan '+key+' preset">'+presetOpts+'</select>'+
+      '<div class="frow"><label>Quota per rep<small>Sales target the rates key off</small></label>'+
+        '<span class="inwrap"><span class="pre">$</span><input type="number" min="0" step="1000" data-plan="'+key+'" data-field="quota"></span></div>'+
+      '<div class="tiers"><table><thead><tr><th>Attainment band</th><th style="text-align:right">Commission rate</th></tr></thead><tbody>'+tierRows+'</tbody></table></div>'+
+      '<div class="frow"><label>Rate application<small>How band rates combine</small></label>'+
+        '<select data-plan="'+key+'" data-field="mode"><option value="marginal">Marginal (brackets)</option><option value="retro">Retroactive (all sales)</option></select></div>'+
+      '<div class="frow"><label>Kicker bonus<small>Flat bonus at threshold</small></label>'+
+        '<span class="inwrap"><span class="pre">$</span><input type="number" min="0" step="100" data-plan="'+key+'" data-field="kickerAmt"></span></div>'+
+      '<div class="frow"><label>Kicker threshold<small>Attainment needed</small></label>'+
+        '<span class="inwrap"><input type="number" min="0" step="5" data-plan="'+key+'" data-field="kickerAt"><span class="suf">%</span></span></div>'+
+      '<div class="frow"><label>Payout floor<small>Guaranteed minimum · 0 = none</small></label>'+
+        '<span class="inwrap"><span class="pre">$</span><input type="number" min="0" step="100" data-plan="'+key+'" data-field="floor"></span></div>'+
+      '<div class="frow"><label>Payout cap<small>Maximum per rep · 0 = no cap</small></label>'+
+        '<span class="inwrap"><span class="pre">$</span><input type="number" min="0" step="1000" data-plan="'+key+'" data-field="cap"></span></div>'+
+      '<div class="total-line"><span class="lab">Total cost — Plan '+key+'</span><span class="val" data-total="'+key+'">—</span></div>'+
+    '</div>';
+  }
+  $("#plans").innerHTML = planCard("A") + planCard("B");
+
+  function syncPlanInputs(key){
+    var p = plans[key];
+    document.querySelectorAll('[data-plan="'+key+'"]').forEach(function(el){
+      if(el.dataset.rate !== undefined){ el.value = p.rates[+el.dataset.rate]; }
+      else if(el.dataset.field){ el.value = p[el.dataset.field]; }
+    });
+  }
+  function markCustom(key){
+    var sel = document.querySelector('select.preset[data-plan="'+key+'"]');
+    if(sel) sel.value = "custom";
+  }
+  document.querySelectorAll("[data-plan]").forEach(function(el){
+    el.addEventListener("input", function(){
+      var key = el.dataset.plan, p = plans[key];
+      if(el.classList.contains("preset")){
+        if(el.value !== "custom" && PRESETS[el.value].rates){
+          plans[key] = clonePlan(PRESETS[el.value]);
+          syncPlanInputs(key);
+          el.value = Object.keys(PRESETS).filter(function(k){return PRESETS[k].label===PRESETS[el.value].label;})[0];
+        }
+        renderResults(); return;
+      }
+      if(el.dataset.rate !== undefined){ p.rates[+el.dataset.rate] = Math.max(0, parseFloat(el.value)||0); }
+      else if(el.dataset.field === "mode"){ p.mode = el.value; }
+      else if(el.dataset.field){ p[el.dataset.field] = Math.max(0, parseFloat(el.value)||0); }
+      markCustom(key);
+      renderResults();
+    });
+    el.addEventListener("change", function(){ if(el.classList.contains("preset")) el.dispatchEvent(new Event("input")); });
+  });
+  /* preset selects: set initial values */
+  (function(){
+    var sa = document.querySelector('select.preset[data-plan="A"]'); if(sa) sa.value = "balanced";
+    var sb = document.querySelector('select.preset[data-plan="B"]'); if(sb) sb.value = "custom";
+    syncPlanInputs("A"); syncPlanInputs("B");
+  })();
+
+  /* ---------- roster ---------- */
+  function renderRoster(){
+    var tb = $("#rosterBody");
+    tb.innerHTML = reps.map(function(r,i){
+      var attA = plans.A.quota>0 ? (r.sales*scale)/plans.A.quota : 0;
+      return '<tr>'+
+        '<td><input type="text" value="'+esc(r.name)+'" data-rep="'+i+'" data-rfield="name" aria-label="Rep name"></td>'+
+        '<td class="r"><input type="number" min="0" step="100" value="'+Math.round(r.sales)+'" data-rep="'+i+'" data-rfield="sales" aria-label="Rep sales"></td>'+
+        '<td class="r"><input type="number" min="0" step="50" value="'+Math.round(r.spiff||0)+'" data-rep="'+i+'" data-rfield="spiff" aria-label="Rep SPIFF or bonus"></td>'+
+        '<td class="r att col-att" data-attcell="'+i+'">'+pct(attA,1)+'</td>'+
+        '<td><button class="rm" type="button" data-remove="'+i+'" aria-label="Remove rep">×</button></td>'+
+      '</tr>';
+    }).join("");
+    tb.querySelectorAll("input").forEach(function(el){
+      el.addEventListener("input", function(){
+        var i = +el.dataset.rep;
+        if(el.dataset.rfield==="name") reps[i].name = el.value;
+        else if(el.dataset.rfield==="spiff") reps[i].spiff = Math.max(0, parseFloat(el.value)||0);
+        else reps[i].sales = Math.max(0, parseFloat(el.value)||0);
+        renderResults();
+      });
+    });
+    tb.querySelectorAll("[data-remove]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        reps.splice(+btn.dataset.remove,1);
+        renderRoster(); renderResults();
+      });
+    });
+  }
+  $("#addRep").addEventListener("click", function(){
+    reps.push({ name:"New rep", sales:80000, spiff:0 });
+    renderRoster(); renderResults();
+  });
+  $("#resetReps").addEventListener("click", function(){
+    reps = SAMPLE.map(function(r){ return { name:r[0], sales:r[1], spiff:0 }; });
+    $("#csvMsg").textContent = "";
+    renderRoster(); renderResults();
+  });
+
+  /* ---------- scenario slider ---------- */
+  $("#scale").addEventListener("input", function(){
+    scale = (+this.value)/100;
+    $("#scaleVal").textContent = "× " + scale.toFixed(2) + (scale===1 ? " — as entered" : (scale>1 ? " — strong quarter" : " — weak quarter"));
+    renderRosterAtt(); renderResults();
+  });
+  function renderRosterAtt(){
+    reps.forEach(function(r,i){
+      var c = document.querySelector('[data-attcell="'+i+'"]');
+      if(c) c.textContent = pct((r.sales*scale)/Math.max(1,plans.A.quota),1);
+    });
+  }
+
+  /* ---------- CSV in / out ---------- */
+  function parseCSV(text){
+    var rows = [], lines = text.replace(/\r\n?/g,"\n").split("\n");
+    for(var li=0; li<lines.length; li++){
+      var line = lines[li].trim(); if(!line) continue;
+      var cells = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(function(c){ return c.replace(/^"|"$/g,"").trim(); });
+      if(cells.length<2) continue;
+      var num = parseFloat(cells[1].replace(/[$,%\s]/g,""));
+      if(isNaN(num)){
+        if(rows.length===0 && li<3) continue; /* header */
+        continue;
+      }
+      var spiff = cells.length>2 ? parseFloat(String(cells[2]).replace(/[$,%\s]/g,"")) : 0;
+      rows.push({ name: cells[0] || ("Rep " + (rows.length+1)), sales: Math.max(0,num), spiff: isNaN(spiff)?0:Math.max(0,spiff) });
+    }
+    return rows;
+  }
+  $("#csvFile").addEventListener("change", function(){
+    var f = this.files && this.files[0]; if(!f) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      var rows = parseCSV(String(reader.result||""));
+      if(rows.length){ reps = rows; renderRoster(); renderResults(); $("#csvMsg").textContent = "Loaded " + rows.length + " reps from " + f.name + "."; $("#csvMsg").style.color = "var(--a-dark)"; }
+      else { $("#csvMsg").textContent = "Could not read any name,sales rows from that file."; $("#csvMsg").style.color = "var(--neg)"; }
+    };
+    reader.readAsText(f);
+    this.value = "";
+  });
+  function download(name, text){
+    var blob = new Blob([text], { type:"text/csv" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 400);
+  }
+  $("#dlTemplate").addEventListener("click", function(){
+    download("commission-roster-template.csv", "name,sales,spiff\nJane Smith,125000,0\nJohn Lee,87500,500\n");
+  });
+
+  /* ---------- charts (hand-authored SVG) ---------- */
+  var NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, text){
+    var e = document.createElementNS(NS, tag);
+    for(var k in attrs) e.setAttribute(k, attrs[k]);
+    if(text !== undefined) e.textContent = text;
+    return e;
+  }
+  var INK = "var(--ink)", MUT = "var(--muted)", LINE = "var(--line)";
+  function styleFor(svg){ svg.style.setProperty("font-family","Manrope, sans-serif"); }
+
+  function drawCurve(rows){
+    var host = $("#curveChart"); host.innerHTML = "";
+    var W=720, H=330, L=66, R=14, T=12, B=38, pw=W-L-R, ph=H-T-B;
+    var maxSalesRep = rows.reduce(function(m,r){ return Math.max(m, r.sales); }, 0);
+    var xMax = niceMax(Math.max(plans.A.quota*2, plans.B.quota*2, maxSalesRep*1.08));
+    var yMax = 0, x;
+    ["A","B"].forEach(function(k){
+      for(var i=0;i<=60;i++){ var y = payout(plans[k], xMax*i/60).pay; if(y>yMax) yMax=y; }
+    });
+    yMax = niceMax(yMax*1.05);
+    var svg = el("svg",{viewBox:"0 0 "+W+" "+H, role:"img", "aria-label":"Payout curve chart comparing Plan A and Plan B"});
+    styleFor(svg);
+    /* gridlines + y ticks */
+    for(var g=0; g<=4; g++){
+      var yv = yMax*g/4, yy = T+ph-(yv/yMax)*ph;
+      svg.appendChild(el("line",{x1:L,y1:yy,x2:L+pw,y2:yy,stroke:LINE,"stroke-width":g===0?1.4:0.7,"stroke-dasharray":g===0?"":"3 4"}));
+      var t = el("text",{x:L-8,y:yy+4,"text-anchor":"end","font-size":11.5,fill:MUT}, money(yv));
+      t.style.fontFamily = "IBM Plex Mono, monospace"; svg.appendChild(t);
+    }
+    /* x ticks */
+    for(var gx=0; gx<=4; gx++){
+      var xv = xMax*gx/4, xx = L+(xv/xMax)*pw;
+      var anchor = gx===0 ? "start" : (gx===4 ? "end" : "middle");
+      var xt = el("text",{x:xx,y:T+ph+22,"text-anchor":anchor,"font-size":11.5,fill:MUT}, money(xv));
+      xt.style.fontFamily = "IBM Plex Mono, monospace"; svg.appendChild(xt);
+    }
+    svg.appendChild(el("text",{x:L+pw/2,y:H-2,"text-anchor":"middle","font-size":11.5,fill:MUT},"Rep sales ($)"));
+    /* quota lines — labels stacked so equal quotas stay readable */
+    [["A","var(--a)",0],["B","var(--b)",1]].forEach(function(qc){
+      var q = plans[qc[0]].quota; if(q>xMax) return;
+      var qx = L+(q/xMax)*pw;
+      svg.appendChild(el("line",{x1:qx,y1:T,x2:qx,y2:T+ph,stroke:qc[1],"stroke-width":1,"stroke-dasharray":"2 4",opacity:.65}));
+      var nearRight = qx > L+pw-80;
+      var qt = el("text",{x:nearRight?qx-4:qx+4,y:T+11+qc[2]*13,"text-anchor":nearRight?"end":"start","font-size":10.5,fill:qc[1],"font-weight":700},"Quota "+qc[0]);
+      svg.appendChild(qt);
+    });
+    /* curves */
+    [["A","var(--a)"],["B","var(--b)"]].forEach(function(pc){
+      var pts = [];
+      for(var i=0;i<=120;i++){
+        x = xMax*i/120;
+        var p = payout(plans[pc[0]], x).pay;
+        pts.push((L+(x/xMax)*pw).toFixed(1)+","+(T+ph-(p/yMax)*ph).toFixed(1));
+      }
+      svg.appendChild(el("polyline",{points:pts.join(" "),fill:"none",stroke:pc[1],"stroke-width":2.4,"stroke-linejoin":"round"}));
+    });
+    /* rep dots */
+    rows.forEach(function(r){
+      [["A","var(--a)","payA"],["B","var(--b)","payB"]].forEach(function(dc){
+        var cx = L+(r.sales/xMax)*pw, cy = T+ph-(r[dc[2]]/yMax)*ph;
+        svg.appendChild(el("circle",{cx:cx,cy:cy,r:3.4,fill:dc[1],stroke:"var(--surface)","stroke-width":1.2,opacity:.92}));
+      });
+    });
+    host.appendChild(svg);
+  }
+
+  function drawBars(rows){
+    var host = $("#barsChart"); host.innerHTML = "";
+    var sorted = rows.slice().sort(function(a,b){ return b.sales-a.sales; });
+    var W=720, R=74, rowH=34, barH=9, T=20;
+    /* size the label gutter from the longest name so nothing is clipped */
+    var meas = document.createElement("canvas").getContext("2d");
+    meas.font = "600 12.5px Manrope, sans-serif";
+    var nameW = sorted.reduce(function(m,r){ return Math.max(m, meas.measureText(r.name).width); }, 0);
+    var L = Math.min(280, Math.max(80, Math.ceil(nameW)+18));
+    var H = T + sorted.length*rowH + 6;
+    var maxPay = sorted.reduce(function(m,r){ return Math.max(m, r.payA, r.payB); }, 0);
+    var xMax = niceMax(maxPay*1.02), pw = W-L-R;
+    var svg = el("svg",{viewBox:"0 0 "+W+" "+H, role:"img", "aria-label":"Bar chart of commission per rep under Plan A and Plan B"});
+    styleFor(svg);
+    [0, .5, 1].forEach(function(f){
+      var xx = L + pw*f;
+      svg.appendChild(el("line",{x1:xx,y1:T-6,x2:xx,y2:H-8,stroke:LINE,"stroke-width":f===0?1.2:.7,"stroke-dasharray":f===0?"":"3 4"}));
+      var t = el("text",{x:xx,y:T-10,"text-anchor":"middle","font-size":11,fill:MUT}, money(xMax*f));
+      t.style.fontFamily = "IBM Plex Mono, monospace"; svg.appendChild(t);
+    });
+    sorted.forEach(function(r,i){
+      var y0 = T + i*rowH;
+      var name = el("text",{x:L-10,y:y0+16,"text-anchor":"end","font-size":12.5,fill:INK,"font-weight":600}, r.name);
+      svg.appendChild(name);
+      [["payA","var(--a)",0],["payB","var(--b)",barH+3]].forEach(function(bc){
+        var w = Math.max(1,(r[bc[0]]/xMax)*pw);
+        svg.appendChild(el("rect",{x:L,y:y0+2+bc[2],width:w,height:barH,rx:2.5,fill:bc[1]}));
+        var vt = el("text",{x:L+w+6,y:y0+2+bc[2]+barH-1,"font-size":11,fill:MUT}, money(r[bc[0]]));
+        vt.style.fontFamily = "IBM Plex Mono, monospace"; svg.appendChild(vt);
+      });
+    });
+    host.appendChild(svg);
+  }
+
+  /* ---------- results ---------- */
+  function computeRows(){
+    return reps.map(function(r){
+      var s = r.sales*scale;
+      var a = payout(plans.A, s), b = payout(plans.B, s);
+      /* one-time SPIFF/bonus: added after caps and floors, same under both plans */
+      var spiff = Math.max(0, r.spiff||0);
+      var payA = Math.round(a.pay + spiff), payB = Math.round(b.pay + spiff);
+      return { name:r.name, sales:s, attA:a.att, attB:b.att, spiff:spiff, payA:payA, payB:payB,
+               capA:a.capped, capB:b.capped, kickA:a.kicked, kickB:b.kicked, delta:payB-payA };
+    });
+  }
+  function renderResults(){
+    renderRosterAtt();
+    var rows = computeRows();
+    var note = $("#resultsNote");
+    if(!rows.length){
+      $("#kpis").innerHTML = '<div class="card empty" style="grid-column:1/-1">Add at least one rep to see the comparison.</div>';
+      $("#insights").innerHTML = "<h4>What changed</h4><p style='margin:0;color:var(--muted)'>No reps yet.</p>";
+      $("#resultsBody").innerHTML = "";
+      $("#curveChart").innerHTML = ""; $("#barsChart").innerHTML = "";
+      document.querySelector('[data-total="A"]').textContent = "—";
+      document.querySelector('[data-total="B"]').textContent = "—";
+      note.textContent = "No reps in the roster.";
+      return;
+    }
+    var totSales = rows.reduce(function(m,r){return m+r.sales;},0);
+    var totA = rows.reduce(function(m,r){return m+r.payA;},0);
+    var totB = rows.reduce(function(m,r){return m+r.payB;},0);
+    var totSpiff = rows.reduce(function(m,r){return m+r.spiff;},0);
+    var dTot = totB-totA;
+    var betterB = rows.filter(function(r){return r.delta>0.5;}).length;
+    var worseB  = rows.filter(function(r){return r.delta<-0.5;}).length;
+    var sameB   = rows.length-betterB-worseB;
+    var capA = rows.filter(function(r){return r.capA;}).length;
+    var capB = rows.filter(function(r){return r.capB;}).length;
+    var kickA = rows.filter(function(r){return r.kickA;}).length;
+    var kickB = rows.filter(function(r){return r.kickB;}).length;
+    var atts = rows.map(function(r){return r.attA;}).sort(function(a,b){return a-b;});
+    var medAtt = atts.length%2 ? atts[(atts.length-1)/2] : (atts[atts.length/2-1]+atts[atts.length/2])/2;
+    var aboveQuota = rows.filter(function(r){return r.attA>=1;}).length;
+
+    document.querySelector('[data-total="A"]').textContent = money(totA);
+    document.querySelector('[data-total="B"]').textContent = money(totB);
+    note.textContent = (scale!==1 ? "Scenario: all sales scaled × "+scale.toFixed(2)+". " : "") +
+      rows.length + " reps · " + money(totSales) + " in team sales.";
+
+    var dCls = Math.abs(dTot)<0.5 ? "flat" : (dTot>0 ? "up" : "down");
+    var dTxt = Math.abs(dTot)<0.5 ? "Plans cost the same" :
+      "Plan B costs " + money(Math.abs(dTot)) + (dTot>0?" more":" less") + " (" + (totA>0? pct(Math.abs(dTot)/totA):"—") + ")";
+    $("#kpis").innerHTML =
+      '<div class="card kpi"><div class="lab">Total commission cost</div>'+
+        '<div class="pair"><span class="v a"><small>PLAN A</small>'+money(totA)+'</span><span class="v b"><small>PLAN B</small>'+money(totB)+'</span></div>'+
+        '<div class="delta '+dCls+'">'+dTxt+'</div></div>'+
+      '<div class="card kpi"><div class="lab">Cost as % of revenue</div>'+
+        '<div class="pair"><span class="v a"><small>PLAN A</small>'+(totSales>0?pct(totA/totSales):"—")+'</span><span class="v b"><small>PLAN B</small>'+(totSales>0?pct(totB/totSales):"—")+'</span></div>'+
+        '<div class="sub">Share of every sales dollar paid back as commission.</div></div>'+
+      '<div class="card kpi"><div class="lab">Average payout per rep</div>'+
+        '<div class="pair"><span class="v a"><small>PLAN A</small>'+money(totA/rows.length)+'</span><span class="v b"><small>PLAN B</small>'+money(totB/rows.length)+'</span></div>'+
+        '<div class="sub">Median attainment vs Plan A quota: '+pct(medAtt,1)+'.</div></div>'+
+      '<div class="card kpi"><div class="lab">Who is better off under B</div>'+
+        '<div class="single">'+betterB+' of '+rows.length+' reps</div>'+
+        '<div class="sub">'+worseB+' earn less, '+sameB+' unchanged. '+aboveQuota+' of '+rows.length+' reps are at or above quota.</div></div>';
+
+    /* insights, all computed from rows */
+    var lis = [];
+    if(Math.abs(dTot)>=0.5 && totA>0){
+      lis.push("Plan B costs <b>"+money(Math.abs(dTot))+"</b> "+(dTot>0?"more":"less")+" than Plan A overall — a "+pct(Math.abs(dTot)/totA)+" swing on a "+money(totA)+" base.");
+    } else {
+      lis.push("The two plans cost almost exactly the same in total — the difference is <b>who</b> gets paid, not how much.");
+    }
+    if(totSpiff>0){
+      var spiffReps = rows.filter(function(r){return r.spiff>0;}).length;
+      lis.push("One-time SPIFFs add <b>"+money(totSpiff)+"</b> across "+spiffReps+" rep"+(spiffReps===1?"":"s")+", paid on top of both plans after caps and floors. <span>They lift both totals equally, so the B − A gap is unchanged.</span>");
+    }
+    var posDelta = rows.filter(function(r){return r.delta>0;}).sort(function(a,b){return b.delta-a.delta;});
+    if(posDelta.length>=2 && dTot>0){
+      var topShare = posDelta.slice(0, Math.min(3,posDelta.length)).reduce(function(m,r){return m+r.delta;},0) /
+                     posDelta.reduce(function(m,r){return m+r.delta;},0);
+      lis.push("<b>"+pct(topShare,0)+"</b> of Plan B's extra payout goes to the top "+Math.min(3,posDelta.length)+" gainers ("+posDelta.slice(0,3).map(function(r){return esc(r.name);}).join(", ")+"). <span>Check that concentration is the behaviour you want to buy.</span>");
+    }
+    var biggestLoser = rows.slice().sort(function(a,b){return a.delta-b.delta;})[0];
+    if(biggestLoser && biggestLoser.delta<-0.5){
+      lis.push("<b>"+esc(biggestLoser.name)+"</b> loses the most under Plan B: <b>"+signedMoney(biggestLoser.delta)+"</b> on "+money(biggestLoser.sales)+" of sales. <span>Expect pushback — or a retention conversation — there first.</span>");
+    }
+    if(capB>0 || capA>0){
+      lis.push("Caps bind for <b>"+capA+" rep"+(capA===1?"":"s")+"</b> under Plan A and <b>"+capB+"</b> under Plan B. <span>A capped rep has no marginal incentive to sell more this period.</span>");
+    }
+    if(kickA!==kickB){
+      lis.push("The kicker is earned by <b>"+kickA+"</b> rep"+(kickA===1?"":"s")+" under Plan A vs <b>"+kickB+"</b> under Plan B.");
+    }
+    if(!lis.length) lis.push("No material differences yet — adjust rates, caps or thresholds to separate the plans.");
+    $("#insights").innerHTML = "<h4>What changed, in plain terms</h4><ul>" + lis.slice(0,4).map(function(s){return "<li>"+s+"</li>";}).join("") + "</ul>";
+
+    /* table */
+    var body = rows.map(function(r){
+      var tags = "";
+      if(r.capA) tags += '<span class="tag cap">CAP A</span>';
+      if(r.capB) tags += '<span class="tag cap">CAP B</span>';
+      if(r.kickA) tags += '<span class="tag kick">KICKER A</span>';
+      if(r.kickB) tags += '<span class="tag kick">KICKER B</span>';
+      var win = Math.abs(r.delta)<=0.5 ? '<span style="color:var(--muted)">Same</span>'
+        : (r.delta>0 ? '<span class="tag win-b">PLAN B</span>' : '<span class="tag win-a">PLAN A</span>');
+      var dCell = Math.abs(r.delta)<=0.5 ? '<span style="color:var(--muted)">$0</span>'
+        : '<span class="'+(r.delta>0?"pos":"negv")+'">'+signedMoney(r.delta)+'</span>';
+      return '<tr><td>'+esc(r.name)+tags+'</td>'+
+        '<td data-label="Sales">'+money(r.sales)+'</td>'+
+        '<td class="col-att">'+pct(r.attA,1)+'</td>'+
+        '<td data-label="SPIFF / bonus">'+(r.spiff>0 ? money(r.spiff) : '<span style="color:var(--muted)">—</span>')+'</td>'+
+        '<td data-label="Plan A pays">'+money(r.payA)+'</td>'+
+        '<td data-label="Plan B pays">'+money(r.payB)+'</td>'+
+        '<td data-label="Δ B − A">'+dCell+'</td>'+
+        '<td class="col-win">'+win+'</td></tr>';
+    }).join("");
+    body += '<tr class="tot"><td>Team total · '+rows.length+' reps</td><td data-label="Sales">'+money(totSales)+'</td><td class="col-att"></td><td data-label="SPIFF / bonus">'+money(totSpiff)+'</td><td data-label="Plan A pays">'+money(totA)+'</td><td data-label="Plan B pays">'+money(totB)+'</td><td data-label="Δ B − A">'+(Math.abs(dTot)<=0.5?"$0":signedMoney(dTot))+'</td><td class="col-win"></td></tr>';
+    $("#resultsBody").innerHTML = body;
+
+    drawCurve(rows);
+    drawBars(rows);
+  }
+
+  $("#dlResults").addEventListener("click", function(){
+    var rows = computeRows();
+    var csv = "rep,sales,attainment_plan_a,spiff,payout_plan_a,payout_plan_b,delta_b_minus_a\n" +
+      rows.map(function(r){
+        return '"'+r.name.replace(/"/g,'""')+'",'+Math.round(r.sales)+","+(r.attA*100).toFixed(1)+"%,"+Math.round(r.spiff)+","+Math.round(r.payA)+","+Math.round(r.payB)+","+Math.round(r.delta);
+      }).join("\n");
+    download("commission-comparison.csv", csv);
+  });
+
+  renderRoster();
+  renderResults();
+})();
+</script>
+  </body>
+</html>

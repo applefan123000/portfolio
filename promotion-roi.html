@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Promotion ROI Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root{
+        --bg:#f4f2ec; --surface:#ffffff; --surface2:#faf8f3;
+        --ink:#182420; --muted:#5d6a62; --faint:#8a958c;
+        --line:#ddd7c9; --line2:#e9e4d6;
+        --a:#0d7a5c; --a-dark:#095c44; --a-soft:#e2efe8;
+        --b:#b96a00; --b-dark:#96560a; --b-soft:#f8ecda;
+        --neg:#b3352b; --neg-soft:#f9e7e4;
+        --shadow:0 1px 2px rgba(24,36,32,.06),0 8px 24px -12px rgba(24,36,32,.18);
+        --radius:14px;
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --bg:#10140f; --surface:#1a201a; --surface2:#212822;
+          --ink:#e9ede7; --muted:#a3ada1; --faint:#79847a;
+          --line:#333d33; --line2:#2a332a;
+          --a:#3ec79e; --a-dark:#3ec79e; --a-soft:#173328;
+          --b:#eda33c; --b-dark:#eda33c; --b-soft:#3a2c14;
+          --neg:#e2705f; --neg-soft:#3a1f1a;
+          --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -12px rgba(0,0,0,.6);
+        }
+      }
+      *{box-sizing:border-box}
+      html{scroll-behavior:smooth}
+      body{margin:0;background:var(--bg);color:var(--ink);font-family:"Manrope",system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+      .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+      .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 64px}
+      header.top{margin-bottom:8px}
+      header.top h1{font-size:clamp(26px,4.5vw,38px);font-weight:800;letter-spacing:-.02em;margin:0 0 8px;line-height:1.12}
+      header.top p{margin:0;color:var(--muted);max-width:760px;font-size:16px}
+      header.top p strong{color:var(--ink)}
+      section{margin-top:34px}
+      .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+      .sec-head .n{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;color:var(--a-dark);background:var(--a-soft);border-radius:999px;padding:2px 10px}
+      .sec-head h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin:0}
+      .sec-head p{margin:0;color:var(--muted);font-size:13.5px}
+      .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+      /* layout grids */
+      .grid-prod{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;align-items:start}
+      .scen-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+      .chart-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;align-items:start}
+      @media (max-width:900px){.grid-prod,.scen-grid,.chart-grid{grid-template-columns:1fr}}
+      .pad{padding:20px}
+      .pad h3{margin:0 0 4px;font-size:16px;font-weight:800}
+      .pad .sub{color:var(--muted);font-size:13px;margin:0 0 12px}
+      /* form rows */
+      .frow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px dashed var(--line2)}
+      .frow:first-of-type{border-top:none}
+      .frow label{font-size:13.5px;font-weight:600}
+      .frow label small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+      .inwrap{display:flex;align-items:center;gap:4px;flex:none}
+      .inwrap .pre,.inwrap .suf{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--muted)}
+      input[type=number],input[type=text],select{font-family:inherit;font-size:14px;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+      input[type=number]{width:104px;text-align:right;font-family:"IBM Plex Mono",monospace}
+      input[type=number]:focus,input[type=text]:focus,select:focus{outline:2px solid var(--a);outline-offset:1px;border-color:transparent}
+      select{padding:7px 8px;font-weight:600;max-width:100%}
+      input[type=range]{accent-color:var(--a);width:150px}
+      .slider-row{display:flex;align-items:center;gap:10px;flex:none}
+      .slider-row .val{font-family:"IBM Plex Mono",monospace;font-size:14px;font-weight:600;min-width:52px;text-align:right}
+      /* scenario cards */
+      .scen{padding:20px}
+      .scen .s-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+      .scen .dot{width:12px;height:12px;border-radius:50%;flex:none}
+      .scen-a .dot{background:var(--a)} .scen-b .dot{background:var(--b)}
+      .scen h3{margin:0;font-size:17px;font-weight:800}
+      .scen .s-sub{color:var(--muted);font-size:13px;margin:0 0 10px}
+      .scen-b input:focus,.scen-b select:focus{outline-color:var(--b)}
+      .scen-b input[type=range]{accent-color:var(--b)}
+      .res-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:14px;padding-top:12px;border-top:2px solid var(--line)}
+      .res-grid .lab{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.02em}
+      .res-grid .v{font-family:"IBM Plex Mono",monospace;font-size:15px;font-weight:600;text-align:right}
+      .hero-line{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line2)}
+      .hero-line .lab{font-size:13px;font-weight:700;color:var(--muted)}
+      .hero-line .val{font-family:"IBM Plex Mono",monospace;font-size:23px;font-weight:600}
+      .scen-a .hero-line .val{color:var(--a-dark)} .scen-b .hero-line .val{color:var(--b-dark)}
+      .val.neg,.neg{color:var(--neg)!important}
+      .verdict{display:inline-block;font-size:12px;font-weight:800;border-radius:999px;padding:2px 10px;margin-top:8px}
+      .verdict.good{background:var(--a-soft);color:var(--a-dark)}
+      .verdict.bad{background:var(--neg-soft);color:var(--neg)}
+      .verdict.flat{background:var(--b-soft);color:var(--b-dark)}
+      /* compare band */
+      .compare{margin-top:18px;padding:18px 20px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+      @media (max-width:900px){.compare{grid-template-columns:1fr 1fr}}
+      .compare .k .lab{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.02em}
+      .compare .k .v{font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:600;margin-top:2px}
+      .compare .k .note{font-size:12px;color:var(--muted)}
+      /* charts */
+      .chart-card{padding:20px}
+      .chart-card h3{margin:0 0 2px;font-size:16px;font-weight:800}
+      .chart-card .sub{color:var(--muted);font-size:13px;margin:0 0 10px}
+      .chart-card svg{width:100%;height:auto;display:block}
+      .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:8px}
+      .legend span{display:inline-flex;align-items:center;gap:6px}
+      .swatch{width:10px;height:10px;border-radius:3px;display:inline-block}
+      .toggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+      .toggle button{border:none;background:var(--surface2);color:var(--muted);font-family:inherit;font-weight:700;font-size:13px;padding:6px 14px;cursor:pointer}
+      .toggle button.on-a{background:var(--a);color:#fff}
+      .toggle button.on-b{background:var(--b);color:#fff}
+      @media (prefers-color-scheme: dark){.toggle button.on-a,.toggle button.on-b{color:#10140f}}
+      /* insights */
+      .insights{padding:6px 20px}
+      .insights li{margin:10px 0;font-size:14.5px}
+      .insights ul{margin:6px 0;padding-left:20px}
+      /* batch table */
+      .tbl-wrap{overflow:hidden}
+      table.data{width:100%;border-collapse:collapse;font-size:13.5px}
+      table.data th{text-align:left;font-size:11.5px;letter-spacing:.04em;color:var(--muted);padding:10px 14px 6px;font-weight:700;white-space:nowrap}
+      table.data th.r,table.data td.r{text-align:right}
+      table.data td{padding:7px 14px;border-top:1px solid var(--line2);font-variant-numeric:tabular-nums}
+      table.data td.name{font-weight:700}
+      table.data tfoot td{font-weight:800;border-top:2px solid var(--line);font-family:"IBM Plex Mono",monospace}
+      @media (max-width:680px){.hide-sm,.hide-xs{display:none}
+        table.data th,table.data td{padding-left:9px;padding-right:9px}
+        table.data th{white-space:normal}}
+      .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+      .btn{display:inline-flex;align-items:center;gap:7px;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 14px;cursor:pointer;box-shadow:var(--shadow)}
+      .btn:hover{border-color:var(--faint)}
+      .btn.primary{background:var(--a);border-color:var(--a);color:#fff}
+      @media (prefers-color-scheme: dark){.btn.primary{color:#10140f}}
+      .btn.primary:hover{filter:brightness(1.07)}
+      .msg{font-size:13px;border-radius:9px;padding:9px 13px;margin-bottom:12px;display:none}
+      .msg.err{display:block;background:var(--neg-soft);color:var(--neg);font-weight:600}
+      .msg.ok{display:block;background:var(--a-soft);color:var(--a-dark);font-weight:600}
+      .howto{padding:18px 20px;font-size:13.5px;color:var(--muted)}
+      .howto h3{color:var(--ink);font-size:15px;margin:0 0 8px}
+      .howto code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:var(--surface2);border:1px solid var(--line2);border-radius:5px;padding:1px 5px;color:var(--ink)}
+      .howto ul{margin:6px 0;padding-left:20px}
+      .howto li{margin:4px 0}
+      footer{margin-top:40px;color:var(--faint);font-size:12.5px;text-align:center}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <h1>Promotion ROI Simulator</h1>
+        <p>Model a price promotion before you run it: set the discount, and see the <strong>volume lift vs. margin erosion</strong> trade-off — incremental profit, ROI, break-even lift, and the <strong>profit-maximizing discount depth</strong>. Compare two promo scenarios side by side, then run the same math across a whole product list.</p>
+      </header>
+
+      <!-- 1 · PRODUCT -->
+      <section>
+        <div class="sec-head"><span class="n">1</span><h2>Product economics</h2><p>Baseline = business as usual, no promotion.</p></div>
+        <div class="grid-prod">
+          <div class="card pad">
+            <h3>The product</h3>
+            <p class="sub">Pick a preset or type your own numbers.</p>
+            <div class="frow"><label>Preset</label>
+              <select id="prodPreset">
+                <option value="custom">Custom</option>
+                <option value="coffee" selected>Premium coffee beans 1 kg</option>
+                <option value="milk">Organic whole milk 4 L</option>
+                <option value="serum">Vitamin C serum 30 ml</option>
+                <option value="earbuds">Bluetooth earbuds</option>
+                <option value="tshirt">Cotton t-shirt</option>
+              </select>
+            </div>
+            <div class="frow"><label>Regular price<small>Per unit, before any discount</small></label>
+              <span class="inwrap"><span class="pre">$</span><input type="number" id="inPrice" min="0" step="0.01" value="18.99"></span></div>
+            <div class="frow"><label>Unit cost<small>COGS per unit</small></label>
+              <span class="inwrap"><span class="pre">$</span><input type="number" id="inCost" min="0" step="0.01" value="10.80"></span></div>
+            <div class="frow"><label>Baseline volume<small>Units per week at regular price</small></label>
+              <span class="inwrap"><input type="number" id="inUnits" min="0" step="1" value="850"><span class="suf">/ wk</span></span></div>
+            <div class="frow"><label>Baseline margin</label>
+              <span class="mono" id="baseMargin" style="font-weight:600">—</span></div>
+          </div>
+          <div class="card pad">
+            <h3>Demand response</h3>
+            <p class="sub">How strongly shoppers react to a price cut. Constant-elasticity model: <span class="mono">units × (1 − discount)<sup>elasticity</sup></span>.</p>
+            <div class="frow"><label>Category preset</label>
+              <select id="elasPreset">
+                <option value="-1.6">Grocery staples · −1.6</option>
+                <option value="-2.0">Dairy &amp; chilled · −2.0</option>
+                <option value="-2.4" selected>Snacks &amp; coffee · −2.4</option>
+                <option value="-2.9">Beauty &amp; personal care · −2.9</option>
+                <option value="-3.1">Consumer electronics · −3.1</option>
+                <option value="-3.4">Apparel · −3.4</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+            <div class="frow"><label>Price elasticity<small>−2.4 means a 10% cut lifts units ≈ 29%</small></label>
+              <span class="slider-row"><input type="range" id="inElas" min="-5" max="-0.5" step="0.1" value="-2.4"><span class="val mono" id="elasVal">−2.4</span></span></div>
+            <div class="frow"><label>Implied lift at 20% off</label>
+              <span class="mono" id="impliedLift" style="font-weight:600">—</span></div>
+            <div class="frow"><label>Baseline weekly profit</label>
+              <span class="mono" id="baseProfit" style="font-weight:600">—</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2 · SCENARIOS -->
+      <section>
+        <div class="sec-head"><span class="n">2</span><h2>Two promotion scenarios</h2><p>Same product, two different offers. Everything recalculates as you type.</p></div>
+        <div class="scen-grid">
+          <div class="card scen scen-a" id="scenA"></div>
+          <div class="card scen scen-b" id="scenB"></div>
+        </div>
+        <div class="card compare" id="compareBand"></div>
+      </section>
+
+      <!-- 3 · CHARTS -->
+      <section>
+        <div class="sec-head"><span class="n">3</span><h2>Where's the sweet spot?</h2>
+          <span class="toggle" role="group" aria-label="Chart scenario">
+            <button id="tglA" class="on-a" type="button">Scenario A</button><button id="tglB" type="button">Scenario B</button>
+          </span>
+        </div>
+        <div class="chart-grid">
+          <div class="card chart-card">
+            <h3>Incremental profit by discount depth</h3>
+            <p class="sub" id="curveSub">—</p>
+            <div id="curveChart"></div>
+            <div class="legend">
+              <span><span class="swatch" style="background:var(--a)"></span>Incremental profit vs. no promo</span>
+              <span><span class="swatch" style="background:var(--b)"></span>Profit-maximizing depth</span>
+              <span><span class="swatch" style="background:var(--faint)"></span>Your chosen depth</span>
+            </div>
+          </div>
+          <div class="card chart-card">
+            <h3>Profit bridge</h3>
+            <p class="sub" id="bridgeSub">—</p>
+            <div id="bridgeChart"></div>
+            <div class="legend">
+              <span><span class="swatch" style="background:var(--a)"></span>Gain</span>
+              <span><span class="swatch" style="background:var(--neg)"></span>Cost / erosion</span>
+              <span><span class="swatch" style="background:var(--faint)"></span>Baseline &amp; result</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 · INSIGHTS -->
+      <section>
+        <div class="sec-head"><span class="n">4</span><h2>What the numbers say</h2></div>
+        <div class="card insights"><ul id="insightList"></ul></div>
+      </section>
+
+      <!-- 5 · BATCH -->
+      <section>
+        <div class="sec-head"><span class="n">5</span><h2>Run it across a product list</h2><p>Upload a CSV and every product gets the same promo math. Fixed promo cost is per product (optional column).</p></div>
+        <div class="toolbar">
+          <label class="btn primary" for="csvFile">Upload CSV</label>
+          <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+          <button class="btn" id="btnTemplate" type="button">Download template</button>
+          <button class="btn" id="btnExport" type="button">Export results (CSV)</button>
+          <button class="btn" id="btnSample" type="button">Restore sample data</button>
+          <span style="font-size:13px;color:var(--muted)">Apply scenario:</span>
+          <span class="toggle" role="group" aria-label="Batch scenario">
+            <button id="bTglA" class="on-a" type="button">A</button><button id="bTglB" type="button">B</button>
+          </span>
+        </div>
+        <div class="msg" id="batchMsg"></div>
+        <div class="card tbl-wrap">
+          <table class="data">
+            <thead><tr>
+              <th>Product</th><th class="r hide-sm">Price</th><th class="r hide-sm">Base units/wk</th>
+              <th class="r">Promo units/wk</th><th class="r hide-xs">Lift</th><th class="r hide-sm">Baseline profit</th>
+              <th class="r hide-xs">Promo profit</th><th class="r">Incremental</th><th class="r hide-xs">ROI</th><th>Verdict</th>
+            </tr></thead>
+            <tbody id="batchBody"></tbody>
+            <tfoot id="batchFoot"></tfoot>
+          </table>
+        </div>
+        <p style="font-size:12.5px;color:var(--muted);margin:10px 2px 0">Profits cover the scenario's full duration. Required columns: <span class="mono">product, price, cost, baseline_units</span> · optional: <span class="mono">elasticity, fixed_cost</span> (blank elasticity uses the value from section 1).</p>
+      </section>
+
+      <!-- 6 · HOW IT WORKS -->
+      <section>
+        <div class="sec-head"><span class="n">6</span><h2>How it works</h2></div>
+        <div class="card howto">
+          <h3>Model &amp; definitions</h3>
+          <ul>
+            <li><strong>Demand:</strong> promo units = baseline units × <code>(1 − discount)^elasticity</code> (constant-elasticity demand, the standard first-pass promo model).</li>
+            <li><strong>Incremental profit</strong> = promo profit − baseline profit over the same weeks, after vendor funding and fixed promo costs.</li>
+            <li><strong>Promo investment</strong> = markdown given away on promo units (<code>discount × price × promo units</code>) + fixed cost − vendor funding. <strong>ROI</strong> = incremental profit ÷ promo investment.</li>
+            <li><strong>Break-even lift</strong> = unit increase needed for incremental profit to hit exactly $0 at that discount.</li>
+            <li><strong>Vendor funding</strong> is modeled as a % of the total markdown cost the supplier reimburses.</li>
+          </ul>
+          <h3 style="margin-top:14px">What it doesn't model</h3>
+          <ul>
+            <li>Halo / basket effects (promo shoppers buying other full-margin items) and cannibalization of sister products.</li>
+            <li>Post-promo dip from stockpiling (pull-forward), competitor response, and stock-outs.</li>
+            <li>Treat the output as a planning estimate: sanity-check the elasticity against your last comparable promotion.</li>
+          </ul>
+        </div>
+      </section>
+
+      <footer>Designed &amp; built by Fan (David) Xu · Runs entirely in your browser — no data leaves this page.</footer>
+    </div>
+
+    <script>
+    "use strict";
+    /* ---------- helpers ---------- */
+    const $ = id => document.getElementById(id);
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    const fmt$ = v => (v < 0 ? "−$" : "$") + Math.abs(v).toLocaleString("en-US", {maximumFractionDigits: 0});
+    const fmt$2 = v => (v < 0 ? "−$" : "$") + Math.abs(v).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const fmtN = v => Math.round(v).toLocaleString("en-US");
+    const fmtPct = (v, d) => (v * 100).toFixed(d == null ? 1 : d) + "%";
+    const num = (v, fallback) => { const n = parseFloat(v); return isFinite(n) ? n : (fallback || 0); };
+    const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+    /* ---------- state ---------- */
+    const PROD_PRESETS = {
+      coffee:  {price: 18.99, cost: 10.80, units: 850,  elas: "-2.4"},
+      milk:    {price: 6.49,  cost: 4.10,  units: 3200, elas: "-1.6"},
+      serum:   {price: 29.99, cost: 11.50, units: 420,  elas: "-2.9"},
+      earbuds: {price: 49.99, cost: 27.00, units: 310,  elas: "-3.1"},
+      tshirt:  {price: 19.99, cost: 8.40,  units: 640,  elas: "-3.4"}
+    };
+    const scenState = {
+      A: {discount: 20, weeks: 2, fixed: 1500, vendor: 30},
+      B: {discount: 30, weeks: 2, fixed: 2500, vendor: 30}
+    };
+    let chartScen = "A";
+    let batchScen = "A";
+
+    const SAMPLE_BATCH = [
+      {product: "Organic whole milk 4 L",    price: 6.49,  cost: 4.10,  units: 3200, elas: -1.6, fixed: 800},
+      {product: "Premium coffee beans 1 kg", price: 18.99, cost: 10.80, units: 850,  elas: -2.4, fixed: 1500},
+      {product: "Greek yogurt 750 g",         price: 5.79,  cost: 3.30,  units: 2100, elas: -2.0, fixed: 600},
+      {product: "Vitamin C serum 30 ml",     price: 29.99, cost: 11.50, units: 420,  elas: -2.9, fixed: 1200},
+      {product: "Trail mix 800 g",           price: 9.49,  cost: 5.60,  units: 1400, elas: -2.3, fixed: 700},
+      {product: "Dishwasher pods 40 ct",     price: 15.99, cost: 9.20,  units: 980,  elas: -1.9, fixed: 900},
+      {product: "Cotton t-shirt",            price: 19.99, cost: 8.40,  units: 640,  elas: -3.4, fixed: 1000},
+      {product: "Bluetooth earbuds",         price: 49.99, cost: 27.00, units: 310,  elas: -3.1, fixed: 1800}
+    ];
+    let batchData = SAMPLE_BATCH.slice();
+    let batchRows = [];
+
+    function getProduct() {
+      return {
+        price: Math.max(0, num($("inPrice").value)),
+        cost: Math.max(0, num($("inCost").value)),
+        units: Math.max(0, num($("inUnits").value)),
+        elas: clamp(num($("inElas").value, -2.4), -8, -0.05)
+      };
+    }
+
+    /* ---------- core math ---------- */
+    // p: {price, cost, units(per week), elas}; s: {discount 0..0.9, weeks, fixed, vendor 0..1}
+    function simulate(p, s) {
+      const d = clamp(s.discount, 0, 0.9);
+      const promoPrice = p.price * (1 - d);
+      const unitMargin0 = p.price - p.cost;
+      const unitMargin1 = promoPrice - p.cost;
+      const liftFactor = d <= 0 ? 1 : Math.pow(1 - d, p.elas);
+      const q1 = p.units * liftFactor;
+      const baseProfit = unitMargin0 * p.units * s.weeks;
+      const markdownPerUnit = d * p.price;
+      const fundingPerUnit = s.vendor * markdownPerUnit;
+      const promoProfit = (unitMargin1 + fundingPerUnit) * q1 * s.weeks - s.fixed;
+      const incremental = promoProfit - baseProfit;
+      const investment = markdownPerUnit * q1 * s.weeks + s.fixed - fundingPerUnit * q1 * s.weeks;
+      const roi = investment > 0 ? incremental / investment : (incremental > 0 ? Infinity : 0);
+      // break-even weekly units at this discount
+      const effMargin = unitMargin1 + fundingPerUnit;
+      let beUnits = null, beLift = null;
+      if (effMargin > 0) {
+        beUnits = (baseProfit + s.fixed) / (effMargin * s.weeks);
+        beLift = p.units > 0 ? beUnits / p.units - 1 : null;
+      }
+      return {d, promoPrice, unitMargin0, unitMargin1, liftFactor, lift: liftFactor - 1, q1,
+              baseProfit, promoProfit, incremental, investment, roi, beUnits, beLift,
+              funding: fundingPerUnit * q1 * s.weeks,
+              markdownCost: markdownPerUnit * q1 * s.weeks};
+    }
+
+    function optimalDiscount(p, s) {
+      let best = {d: 0, incremental: simulate(p, Object.assign({}, s, {discount: 0})).incremental};
+      for (let d = 0.005; d <= 0.6001; d += 0.005) {
+        const r = simulate(p, Object.assign({}, s, {discount: d}));
+        if (r.incremental > best.incremental) best = {d: d, incremental: r.incremental};
+      }
+      return best;
+    }
+    /* ---------- scenario cards ---------- */
+    function scenCardHTML(key) {
+      const s = scenState[key];
+      return `
+        <div class="s-head"><span class="dot"></span><h3>Scenario ${key}</h3></div>
+        <p class="s-sub">${key === "A" ? "The moderate offer — shallower cut, lighter spend." : "The aggressive offer — deeper cut, heavier spend."}</p>
+        <div class="frow"><label>Discount depth</label>
+          <span class="slider-row"><input type="range" id="sc_${key}_discount" min="0" max="60" step="1" value="${s.discount}"><span class="val mono" id="sc_${key}_discount_v">${s.discount}%</span></span></div>
+        <div class="frow"><label>Duration</label>
+          <span class="inwrap"><input type="number" id="sc_${key}_weeks" min="1" max="52" step="1" value="${s.weeks}"><span class="suf">weeks</span></span></div>
+        <div class="frow"><label>Fixed promo cost<small>Feature, display, signage, flyer</small></label>
+          <span class="inwrap"><span class="pre">$</span><input type="number" id="sc_${key}_fixed" min="0" step="50" value="${s.fixed}"></span></div>
+        <div class="frow"><label>Vendor funding<small>Supplier reimburses this % of the markdown</small></label>
+          <span class="inwrap"><input type="number" id="sc_${key}_vendor" min="0" max="100" step="5" value="${s.vendor}"><span class="suf">%</span></span></div>
+        <div id="sc_${key}_results"></div>`;
+    }
+    $("scenA").innerHTML = scenCardHTML("A");
+    $("scenB").innerHTML = scenCardHTML("B");
+
+    function readScen(key) {
+      return {
+        discount: clamp(num($("sc_" + key + "_discount").value), 0, 60) / 100,
+        weeks: clamp(num($("sc_" + key + "_weeks").value, 1), 1, 52),
+        fixed: Math.max(0, num($("sc_" + key + "_fixed").value)),
+        vendor: clamp(num($("sc_" + key + "_vendor").value), 0, 100) / 100
+      };
+    }
+
+    function verdictOf(r) {
+      if (r.incremental > 0.5) return {cls: "good", txt: "Profitable — run it"};
+      if (r.incremental < -0.5) return {cls: "bad", txt: "Loses money — rethink"};
+      return {cls: "flat", txt: "Break-even"};
+    }
+
+    function scenResultsHTML(r, s) {
+      const v = verdictOf(r);
+      return `
+        <div class="res-grid">
+          <span class="lab">PROMO PRICE</span><span class="v">${fmt$2(r.promoPrice)}</span>
+          <span class="lab">UNIT LIFT</span><span class="v">+${fmtPct(r.lift)}</span>
+          <span class="lab">PROMO UNITS / WK</span><span class="v">${fmtN(r.q1)}</span>
+          <span class="lab">UNIT MARGIN</span><span class="v${r.unitMargin1 < 0 ? " neg" : ""}">${fmt$2(r.unitMargin1)}</span>
+          <span class="lab">BREAK-EVEN LIFT</span><span class="v">${r.beLift == null ? "never" : "+" + fmtPct(r.beLift)}</span>
+          <span class="lab">PROMO INVESTMENT</span><span class="v">${fmt$(r.investment)}</span>
+          <span class="lab">ROI</span><span class="v${r.roi < 0 ? " neg" : ""}">${isFinite(r.roi) ? fmtPct(r.roi) : "∞"}</span>
+          <span class="lab">PROMO PROFIT (${s.weeks} WK)</span><span class="v">${fmt$(r.promoProfit)}</span>
+        </div>
+        <div class="hero-line"><span class="lab">Incremental profit</span><span class="val${r.incremental < 0 ? " neg" : ""}">${fmt$(r.incremental)}</span></div>
+        <span class="verdict ${v.cls}">${v.txt}</span>`;
+    }
+
+    /* ---------- charts (hand-authored SVG) ---------- */
+    function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+    function drawCurve(p, s, key) {
+      const W = 640, H = 320, L = 64, R = 14, T = 14, B = 38;
+      const iw = W - L - R, ih = H - T - B, maxD = 0.55;
+      const pts = [];
+      for (let d = 0; d <= maxD + 1e-9; d += 0.01) pts.push({d: d, v: simulate(p, Object.assign({}, s, {discount: d})).incremental});
+      const opt = optimalDiscount(p, s);
+      const cur = simulate(p, s);
+      let lo = 0, hi = 0;
+      pts.forEach(pt => { lo = Math.min(lo, pt.v); hi = Math.max(hi, pt.v); });
+      if (hi - lo < 1) hi = lo + 1;
+      const padY = (hi - lo) * 0.12; hi += padY; lo -= padY;
+      const X = d => L + (d / maxD) * iw;
+      const Y = v => T + (1 - (v - lo) / (hi - lo)) * ih;
+      const line = pts.map((pt, i) => (i ? "L" : "M") + X(pt.d).toFixed(1) + " " + Y(pt.v).toFixed(1)).join(" ");
+      let grid = "";
+      for (let gv = 0; gv <= 4; gv++) {
+        const val = lo + (hi - lo) * gv / 4, y = Y(val);
+        grid += `<line x1="${L}" y1="${y}" x2="${W - R}" y2="${y}" style="stroke:var(--line2)" stroke-width="1"/>` +
+                `<text x="${L - 8}" y="${y + 4}" text-anchor="end" font-size="11" style="fill:var(--faint)" font-family="IBM Plex Mono">${fmt$(val)}</text>`;
+      }
+      let xlab = "";
+      for (let d = 0; d <= 0.51; d += 0.1) xlab += `<text x="${X(d)}" y="${H - 12}" text-anchor="middle" font-size="11" style="fill:var(--faint)" font-family="IBM Plex Mono">${Math.round(d * 100)}%</text>`;
+      const zeroY = Y(0);
+      $("curveChart").innerHTML =
+        `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Incremental profit by discount depth">
+          ${grid}
+          <line x1="${L}" y1="${zeroY}" x2="${W - R}" y2="${zeroY}" style="stroke:var(--faint)" stroke-width="1.2"/>
+          ${xlab}
+          <path d="${line}" fill="none" style="stroke:var(--a)" stroke-width="2.5" stroke-linejoin="round"/>
+          <line x1="${X(opt.d)}" y1="${T}" x2="${X(opt.d)}" y2="${H - B}" style="stroke:var(--b)" stroke-width="1.2" stroke-dasharray="4 4"/>
+          <circle cx="${X(opt.d)}" cy="${Y(opt.incremental)}" r="5" style="fill:var(--b)"/>
+          <text x="${clamp(X(opt.d), L + 40, W - R - 40)}" y="${Math.max(14, Y(opt.incremental) - 12)}" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--b-dark)" font-family="Manrope">Best: ${Math.round(opt.d * 100)}% off · ${fmt$(opt.incremental)}</text>
+          <circle cx="${X(cur.d)}" cy="${Y(cur.incremental)}" r="5.5" style="fill:var(--faint);stroke:var(--surface)" stroke-width="2"/>
+          <text x="${clamp(X(cur.d), L + 46, W - R - 46)}" y="${Y(cur.incremental) + 22}" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--muted)" font-family="Manrope">Scenario ${key}: ${Math.round(cur.d * 100)}% off · ${fmt$(cur.incremental)}</text>
+        </svg>`;
+      $("curveSub").textContent = `Scenario ${key}'s cost structure (fixed ${fmt$(s.fixed)}, vendor funding ${Math.round(s.vendor * 100)}%, ${s.weeks} weeks) applied at every depth.`;
+    }
+
+    function drawBridge(p, s, key) {
+      const r = simulate(p, s);
+      const steps = [
+        {label: "Baseline profit", val: r.baseProfit, cum: r.baseProfit, kind: "base"},
+        {label: "Volume gain", val: (r.q1 - p.units) * s.weeks * r.unitMargin1, kind: "delta"},
+        {label: "Markdown on base volume", val: -p.units * s.weeks * (r.d * p.price), kind: "delta"},
+        {label: "Vendor funding", val: r.funding, kind: "delta"},
+        {label: "Fixed promo cost", val: -s.fixed, kind: "delta"},
+        {label: "Promo profit", val: r.promoProfit, cum: r.promoProfit, kind: "base"}
+      ];
+      let run = r.baseProfit;
+      steps.forEach(st => { if (st.kind === "delta") { st.from = run; run += st.val; st.to = run; } else { st.from = 0; st.to = st.cum; } });
+      const W = 520, rowH = 40, T = 8, B = 8, H = T + steps.length * rowH + B, L = 178, R = 86;
+      const iw = W - L - R;
+      let maxV = 0;
+      steps.forEach(st => { maxV = Math.max(maxV, Math.abs(st.from), Math.abs(st.to)); });
+      if (maxV < 1) maxV = 1;
+      const X = v => L + (v / maxV) * iw;
+      let rows = "";
+      steps.forEach((st, i) => {
+        const y = T + i * rowH + 7, h = 22;
+        const x1 = X(Math.min(st.from, st.to)), x2 = X(Math.max(st.from, st.to));
+        const fill = st.kind === "base" ? "var(--faint)" : (st.val >= 0 ? "var(--a)" : "var(--neg)");
+        rows += `<text x="${L - 10}" y="${y + h / 2 + 4}" text-anchor="end" font-size="12" font-weight="600" style="fill:var(--ink)" font-family="Manrope">${st.label}</text>` +
+          `<rect x="${x1}" y="${y}" width="${Math.max(2, x2 - x1)}" height="${h}" rx="4" style="fill:${fill}" opacity="${st.kind === "base" ? ".55" : ".9"}"/>` +
+          `<text x="${x2 + 8}" y="${y + h / 2 + 4}" font-size="12" font-weight="700" style="fill:var(--ink)" font-family="IBM Plex Mono">${st.kind === "base" ? fmt$(st.cum) : (st.val < 0 ? "−" + fmt$(Math.abs(st.val)).replace("-", "") : "+" + fmt$(st.val))}</text>`;
+      });
+      $("bridgeChart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Profit bridge">${rows}</svg>`;
+      $("bridgeSub").textContent = `Scenario ${key} over ${s.weeks} weeks: how baseline profit becomes promo profit.`;
+    }
+
+    /* ---------- insights ---------- */
+    function buildInsights(p, rA, rB, sA, sB) {
+      const items = [];
+      const optA = optimalDiscount(p, sA);
+      const win = rA.incremental >= rB.incremental ? ["A", rA, rB] : ["B", rB, rA];
+      if (Math.abs(rA.incremental - rB.incremental) < 1 && rA.incremental <= 0) {
+        items.push(`<strong>Neither scenario pays.</strong> Both land at about ${fmt$(Math.max(rA.incremental, rB.incremental))} incremental profit — at this elasticity the extra volume doesn't cover the markdown. Shallower discounts or more vendor funding are worth testing.`);
+      } else {
+        items.push(`<strong>Scenario ${win[0]} wins</strong> by ${fmt$(Math.abs(rA.incremental - rB.incremental))} of incremental profit (${fmt$(win[1].incremental)} vs. ${fmt$(win[2].incremental)}). Deeper isn't automatically better — past the peak of the curve, each extra point of discount buys volume at a thinner margin than the last.`);
+      }
+      if (optA.incremental > 0) {
+        items.push(`<strong>Optimal depth ≈ ${Math.round(optA.d * 100)}% off</strong> under Scenario A's cost structure, worth ${fmt$(optA.incremental)} incremental profit. Scenario A currently sits at ${Math.round(sA.discount * 100)}% (${fmt$(rA.incremental)}) — ${optA.incremental - rA.incremental > 1 ? "moving toward the optimum adds about " + fmt$(optA.incremental - rA.incremental) + "." : "essentially on the peak already."}`);
+      } else {
+        items.push(`<strong>No profitable discount exists</strong> for this product at elasticity ${p.elas.toFixed(1)} with Scenario A's costs — the curve stays below $0 at every depth up to 60% off. The levers are price/cost structure, vendor funding, or a cheaper mechanic than a straight price cut.`);
+      }
+      [["A", rA, sA], ["B", rB, sB]].forEach(([k, r, s]) => {
+        if (r.beLift != null) items.push(`Scenario ${k} needs at least <strong>+${fmtPct(r.beLift)} units</strong> to break even and the model expects <strong>+${fmtPct(r.lift)}</strong> — a cushion of ${fmtPct(Math.max(0, r.lift - r.beLift))}. ${r.lift < r.beLift ? "<strong>Expected lift is below break-even</strong>, so this scenario only works if the product responds better than the elasticity suggests." : "Comfortable, provided the elasticity estimate holds."}`);
+        else items.push(`Scenario ${k} <strong>can never break even</strong>: after vendor funding, each promo unit still loses ${fmt$2(-(r.unitMargin1 + s.vendor * r.d * p.price))} before fixed costs — at this depth, selling more only loses more.`);
+      });
+      const fundShare = rA.markdownCost > 0 ? rA.funding / rA.markdownCost : 0;
+      if (rA.funding > 0) items.push(`Vendor funding covers <strong>${fmtPct(fundShare, 0)} of Scenario A's markdown</strong> (${fmt$(rA.funding)} of ${fmt$(rA.markdownCost)}). Negotiating that rate up is often the cheapest way to rescue a marginal promotion — it raises profit without touching the shelf price.`);
+      if (rB.unitMargin1 < 0 || rA.unitMargin1 < 0) items.push(`<strong>Below-cost warning:</strong> at the deeper discount the promo price drops under unit cost — every extra unit sold loses money before funding, so volume growth makes the result worse, not better.`);
+      $("insightList").innerHTML = items.map(t => `<li>${t}</li>`).join("");
+    }
+
+    /* ---------- batch ---------- */
+    function renderBatch(p) {
+      const key = batchScen;
+      const sBase = readScen(key);
+      batchRows = batchData.map(row => {
+        const prod = {price: row.price, cost: row.cost, units: row.units, elas: row.elas != null ? row.elas : p.elas};
+        const s = {discount: sBase.discount, weeks: sBase.weeks, fixed: row.fixed || 0, vendor: sBase.vendor};
+        const r = simulate(prod, s);
+        return {row, r};
+      });
+      batchRows.sort((a, b) => b.r.incremental - a.r.incremental);
+      $("batchBody").innerHTML = batchRows.map(({row, r}) => {
+        const v = verdictOf(r);
+        return `<tr>
+          <td class="name">${esc(row.product)}</td>
+          <td class="r hide-sm mono">${fmt$2(row.price)}</td>
+          <td class="r hide-sm mono">${fmtN(row.units)}</td>
+          <td class="r mono">${fmtN(r.q1)}</td>
+          <td class="r hide-xs mono">+${fmtPct(r.lift)}</td>
+          <td class="r hide-sm mono">${fmt$(r.baseProfit)}</td>
+          <td class="r hide-xs mono">${fmt$(r.promoProfit)}</td>
+          <td class="r mono" style="font-weight:700;${r.incremental < 0 ? "color:var(--neg)" : "color:var(--a-dark)"}">${fmt$(r.incremental)}</td>
+          <td class="r hide-xs mono">${isFinite(r.roi) ? fmtPct(r.roi) : "∞"}</td>
+          <td><span class="verdict ${v.cls}" style="margin:0">${v.cls === "good" ? "Run" : v.cls === "bad" ? "Skip" : "Flat"}</span></td>
+        </tr>`;
+      }).join("");
+      const T = batchRows.reduce((acc, x) => ({units: acc.units + x.row.units, q1: acc.q1 + x.r.q1, base: acc.base + x.r.baseProfit, promo: acc.promo + x.r.promoProfit, inc: acc.inc + x.r.incremental}), {units: 0, q1: 0, base: 0, promo: 0, inc: 0});
+      const winners = batchRows.filter(x => x.r.incremental > 0).length;
+      $("batchFoot").innerHTML = `<tr><td>All products · ${winners} of ${batchRows.length} profitable</td><td class="r hide-sm"></td><td class="r hide-sm">${fmtN(T.units)}</td><td class="r">${fmtN(T.q1)}</td><td class="r hide-xs"></td><td class="r hide-sm">${fmt$(T.base)}</td><td class="r hide-xs">${fmt$(T.promo)}</td><td class="r">${fmt$(T.inc)}</td><td class="r hide-xs"></td><td></td></tr>`;
+    }
+
+    /* ---------- CSV ---------- */
+    function parseCSV(text) {
+      const rows = [];
+      let cur = [""], inQ = false, field = 0;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (inQ) {
+          if (c === '"') { if (text[i + 1] === '"') { cur[field] += '"'; i++; } else inQ = false; }
+          else cur[field] += c;
+        } else if (c === '"') inQ = true;
+        else if (c === ",") { cur.push(""); field++; }
+        else if (c === "\n" || c === "\r") {
+          if (c === "\r" && text[i + 1] === "\n") i++;
+          rows.push(cur); cur = [""]; field = 0;
+        } else cur[field] += c;
+      }
+      if (cur.length > 1 || cur[0] !== "") rows.push(cur);
+      return rows;
+    }
+    function downloadCSV(name, text) {
+      const blob = new Blob([text], {type: "text/csv"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }
+    function batchMsg(kind, text) {
+      const m = $("batchMsg");
+      m.className = "msg " + kind; m.textContent = text;
+    }
+    $("csvFile").addEventListener("change", e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const rows = parseCSV(String(reader.result)).filter(r => r.some(c => String(c).trim() !== ""));
+          if (rows.length < 2) throw new Error("The file has a header but no data rows.");
+          const head = rows[0].map(h => String(h).trim().toLowerCase());
+          const idx = name => head.indexOf(name);
+          const need = ["product", "price", "cost", "baseline_units"];
+          const missing = need.filter(n => idx(n) < 0);
+          if (missing.length) throw new Error("Missing required column(s): " + missing.join(", ") + ". Download the template to see the expected format.");
+          const out = [];
+          for (let i = 1; i < rows.length; i++) {
+            const r = rows[i];
+            const price = num(r[idx("price")]), cost = num(r[idx("cost")]), units = num(r[idx("baseline_units")]);
+            if (!r[idx("product")] || !(price > 0) || !(units > 0)) continue;
+            out.push({
+              product: String(r[idx("product")]).trim(), price, cost, units,
+              elas: idx("elasticity") >= 0 && String(r[idx("elasticity")]).trim() !== "" ? clamp(num(r[idx("elasticity")], -2), -8, -0.05) : null,
+              fixed: idx("fixed_cost") >= 0 ? Math.max(0, num(r[idx("fixed_cost")])) : 0
+            });
+          }
+          if (!out.length) throw new Error("No valid product rows found — check that price and baseline_units are numbers above 0.");
+          batchData = out;
+          batchMsg("ok", "Loaded " + out.length + " product(s) from " + f.name + ". The table below now runs on your data.");
+          renderAll();
+        } catch (err) {
+          batchMsg("err", err.message);
+        }
+        e.target.value = "";
+      };
+      reader.readAsText(f);
+    });
+    $("btnTemplate").addEventListener("click", () => {
+      downloadCSV("promotion_roi_template.csv",
+        "product,price,cost,baseline_units,elasticity,fixed_cost\n" +
+        "Greek yogurt 750 g,5.79,3.30,2100,-2.0,600\n" +
+        "Bluetooth earbuds,49.99,27.00,310,-3.1,1800\n");
+    });
+    $("btnSample").addEventListener("click", () => {
+      batchData = SAMPLE_BATCH.slice();
+      batchMsg("ok", "Sample data restored (8 products).");
+      renderAll();
+    });
+    $("btnExport").addEventListener("click", () => {
+      const key = batchScen, s = readScen(key);
+      let csv = "product,price,cost,baseline_units_per_week,elasticity,discount_pct,weeks,fixed_cost,promo_units_per_week,lift_pct,baseline_profit,promo_profit,incremental_profit,roi_pct,verdict\n";
+      batchRows.forEach(({row, r}) => {
+        const v = verdictOf(r);
+        csv += [JSON.stringify(row.product), row.price.toFixed(2), row.cost.toFixed(2), row.units,
+          (row.elas != null ? row.elas : getProduct().elas).toFixed(2), Math.round(s.discount * 100), s.weeks, (row.fixed || 0).toFixed(2),
+          Math.round(r.q1), (r.lift * 100).toFixed(1), Math.round(r.baseProfit), Math.round(r.promoProfit), Math.round(r.incremental),
+          isFinite(r.roi) ? (r.roi * 100).toFixed(1) : "", JSON.stringify(v.txt)].join(",") + "\n";
+      });
+      downloadCSV("promotion_roi_results_scenario_" + key.toLowerCase() + ".csv", csv);
+    });
+
+    /* ---------- render all ---------- */
+    function renderAll() {
+      const p = getProduct();
+      $("elasVal").textContent = "−" + Math.abs(p.elas).toFixed(1);
+      $("baseMargin").textContent = fmt$2(p.price - p.cost) + " / unit (" + (p.price > 0 ? fmtPct((p.price - p.cost) / p.price, 0) : "—") + ")";
+      $("baseProfit").textContent = fmt$((p.price - p.cost) * p.units) + " / wk";
+      $("impliedLift").textContent = "+" + fmtPct(Math.pow(0.8, p.elas) - 1) + " units";
+      const sA = readScen("A"), sB = readScen("B");
+      const rA = simulate(p, sA), rB = simulate(p, sB);
+      $("sc_A_discount_v").textContent = Math.round(sA.discount * 100) + "%";
+      $("sc_B_discount_v").textContent = Math.round(sB.discount * 100) + "%";
+      $("sc_A_results").innerHTML = scenResultsHTML(rA, sA);
+      $("sc_B_results").innerHTML = scenResultsHTML(rB, sB);
+      const better = rA.incremental >= rB.incremental ? "A" : "B";
+      $("compareBand").innerHTML = `
+        <div class="k"><div class="lab">BETTER SCENARIO</div><div class="v">Scenario ${better}</div><div class="note">by ${fmt$(Math.abs(rA.incremental - rB.incremental))} incremental profit</div></div>
+        <div class="k"><div class="lab">COMBINED PROMO UNITS / WK</div><div class="v">${fmtN(rA.q1)} vs ${fmtN(rB.q1)}</div><div class="note">vs. ${fmtN(p.units)} at regular price</div></div>
+        <div class="k"><div class="lab">COMBINED INCREMENTAL PROFIT</div><div class="v" style="${(rA.incremental + rB.incremental) < 0 ? "color:var(--neg)" : ""}">${fmt$(rA.incremental + rB.incremental)}</div><div class="note">if both offers ran (different products / periods)</div></div>
+        <div class="k"><div class="lab">BASELINE PROFIT (${sA.weeks} WK)</div><div class="v">${fmt$(rA.baseProfit)}</div><div class="note">the number every promo is judged against</div></div>`;
+      const cs = chartScen === "A" ? sA : sB;
+      drawCurve(p, cs, chartScen);
+      drawBridge(p, cs, chartScen);
+      buildInsights(p, rA, rB, sA, sB);
+      renderBatch(p);
+    }
+
+    /* ---------- events ---------- */
+    ["inPrice", "inCost", "inUnits", "inElas"].forEach(id => $(id).addEventListener("input", () => {
+      if (id !== "inElas") $("prodPreset").value = "custom";
+      if (id === "inElas") $("elasPreset").value = "custom";
+      renderAll();
+    }));
+    ["A", "B"].forEach(k => {
+      ["discount", "weeks", "fixed", "vendor"].forEach(f => {
+        $("sc_" + k + "_" + f).addEventListener("input", renderAll);
+      });
+    });
+    $("prodPreset").addEventListener("change", e => {
+      const pr = PROD_PRESETS[e.target.value];
+      if (!pr) return;
+      $("inPrice").value = pr.price; $("inCost").value = pr.cost; $("inUnits").value = pr.units;
+      $("inElas").value = pr.elas;
+      $("elasPreset").value = pr.elas;
+      renderAll();
+    });
+    $("elasPreset").addEventListener("change", e => {
+      if (e.target.value === "custom") return;
+      $("inElas").value = e.target.value;
+      renderAll();
+    });
+    function setToggle(which, key) {
+      chartScen = key;
+      $("tglA").className = key === "A" ? "on-a" : "";
+      $("tglB").className = key === "B" ? "on-b" : "";
+      renderAll();
+    }
+    $("tglA").addEventListener("click", () => setToggle("chart", "A"));
+    $("tglB").addEventListener("click", () => setToggle("chart", "B"));
+    $("bTglA").addEventListener("click", () => { batchScen = "A"; $("bTglA").className = "on-a"; $("bTglB").className = ""; renderAll(); });
+    $("bTglB").addEventListener("click", () => { batchScen = "B"; $("bTglA").className = ""; $("bTglB").className = "on-b"; renderAll(); });
+    window.addEventListener("resize", () => {});
+    renderAll();
+    </script>
+  </body>
+</html>

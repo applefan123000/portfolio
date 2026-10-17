@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:," />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <title>AI Business Insights Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg:#f2f4ef;
+      --panel:#ffffff;
+      --panel-2:#f7f8f5;
+      --text:#14231c;
+      --muted:#5e6d65;
+      --subtle:#839088;
+      --line:#dbe1dc;
+      --accent:#176b4b;
+      --accent-strong:#0d5338;
+      --accent-soft:#dff1e8;
+      --lime:#a9d642;
+      --orange:#d96935;
+      --orange-soft:#f9e8df;
+      --blue:#3c6d99;
+      --danger:#a74337;
+      --shadow:0 14px 42px rgba(27,43,35,.08);
+      --radius-lg:24px;
+      --radius-md:15px;
+    }
+    @media (prefers-color-scheme:dark){
+      :root{
+        --bg:#0e1512;
+        --panel:#16201b;
+        --panel-2:#1b2821;
+        --text:#eef4ef;
+        --muted:#b2c0b7;
+        --subtle:#84958b;
+        --line:#2b3b32;
+        --accent:#69c79c;
+        --accent-strong:#8ad9b4;
+        --accent-soft:#1d3b2e;
+        --lime:#b6dd5d;
+        --orange:#ef8b5d;
+        --orange-soft:#43291f;
+        --blue:#80acd2;
+        --danger:#f19183;
+        --shadow:0 18px 50px rgba(0,0,0,.22);
+      }
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:"IBM Plex Sans",sans-serif;line-height:1.5}
+    button{font:inherit}
+    .wrap{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:28px 0 56px}
+    .topline{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:26px}
+    .scope{display:flex;align-items:center;gap:12px;min-width:0}
+    .scope-mark{width:12px;height:32px;border-radius:3px;background:linear-gradient(180deg,var(--lime) 0 42%,var(--accent) 42%)}
+    .scope strong{display:block;font-family:"IBM Plex Sans",sans-serif;font-size:15px;white-space:nowrap}
+    .scope span{display:block;color:var(--muted);font-size:12px;white-space:nowrap}
+    .top-actions{display:flex;align-items:center;gap:10px}
+    .sample-tag{color:var(--accent);background:var(--accent-soft);padding:7px 11px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+    .icon-btn{border:1px solid var(--line);background:var(--panel);color:var(--text);width:38px;height:38px;border-radius:11px;display:grid;place-items:center;cursor:pointer}
+    .icon-btn:hover{border-color:var(--accent)}
+    .icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}
+    .hero{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.65fr);gap:26px;align-items:end;margin-bottom:24px}
+    .hero h1{margin:0;font-family:"IBM Plex Sans",sans-serif;font-size:clamp(32px,5.2vw,66px);line-height:1.06;letter-spacing:-.055em;max-width:850px}
+    .hero h1 em{font-style:normal;color:var(--accent)}
+    .hero-note{border-left:1px solid var(--line);padding:4px 0 4px 22px}
+    .hero-note p{margin:0 0 14px;color:var(--muted);font-size:14px}
+    .hero-note strong{display:block;font-size:16px}
+    .hero-note span{color:var(--accent);font-size:13px;font-weight:600}
+    .nav{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow:auto;scrollbar-width:none}
+    .nav::-webkit-scrollbar{display:none}
+    .nav button{border:0;background:transparent;color:var(--muted);padding:12px 16px;cursor:pointer;font-weight:600;white-space:nowrap;position:relative}
+    .nav button.active{color:var(--text)}
+    .nav button.active:after{content:"";height:3px;border-radius:3px;background:var(--accent);position:absolute;left:14px;right:14px;bottom:-1px}
+    .view{display:none}
+    .view.active{display:block}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+    .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);padding:18px;min-width:0}
+    .kpi-head{display:flex;justify-content:space-between;gap:10px;align-items:center;color:var(--muted);font-size:13px}
+    .kpi-head svg{width:18px;height:18px;fill:none;stroke:var(--subtle);stroke-width:1.7}
+    .kpi-value{font-size:clamp(25px,3vw,36px);letter-spacing:-.04em;font-weight:600;margin:18px 0 8px;white-space:nowrap}
+    .delta{font-size:12px;color:var(--muted)}
+    .delta strong{color:var(--accent);font-weight:600;margin-right:5px}
+    .delta.down strong{color:var(--danger)}
+    .dashboard-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.75fr);gap:16px;align-items:start}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow)}
+    .chart-card{padding:22px 22px 14px}
+    .card-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+    .card-head h2,.insight-card h2,.detail-head h2{font-family:"IBM Plex Sans",sans-serif;margin:0;font-size:18px;letter-spacing:-.02em}
+    .card-head p,.detail-head p{margin:5px 0 0;color:var(--muted);font-size:13px}
+    .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap;justify-content:flex-end}
+    .legend span{display:flex;align-items:center;gap:6px}
+    .legend i{width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--accent)}
+    .legend span:last-child i{background:var(--line);border:1px solid var(--subtle)}
+    #trendChart{width:100%;height:auto;display:block;min-height:278px}
+    .chart-caption{color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:11px;margin-top:2px}
+    .insight-card{padding:22px;position:relative;overflow:hidden}
+    .insight-card:before{content:"";position:absolute;right:-50px;top:-60px;width:150px;height:150px;border-radius:50%;background:var(--accent-soft);opacity:.7}
+    .ai-head{display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative}
+    .ai-label{display:flex;align-items:center;gap:9px}
+    .ai-dot{width:13px;height:13px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 5px color-mix(in srgb,var(--lime) 20%,transparent)}
+    .analysis-time{color:var(--subtle);font-size:11px}
+    .insight-summary{font-size:16px;line-height:1.65;margin:22px 0 18px;position:relative}
+    .insight-summary strong{color:var(--accent)}
+    .signals{display:grid;gap:10px}
+    .signal{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:start;background:var(--panel-2);padding:12px;border-radius:12px}
+    .signal-num{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:12px}
+    .signal strong{font-size:13px;display:block;margin-bottom:2px}
+    .signal p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+    .confidence{font-size:10px;color:var(--subtle);padding-top:3px}
+    .rerun{margin-top:16px;width:100%;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:11px;padding:10px 14px;font-weight:600;cursor:pointer}
+    .rerun:hover{background:var(--accent-soft)}
+    .rerun.loading{pointer-events:none;opacity:.72}
+    .spinner{display:none;width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:7px}
+    .loading .spinner{display:inline-block}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .detail-card{padding:22px}
+    .detail-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:20px}
+    .segmented{display:flex;background:var(--panel-2);padding:4px;border-radius:12px;gap:2px;flex-wrap:wrap}
+    .segmented button{border:0;background:transparent;color:var(--muted);padding:7px 11px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
+    .segmented button.active{background:var(--panel);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .ranking{display:grid;gap:14px}
+    .rank-row{display:grid;grid-template-columns:minmax(100px,1.05fr) minmax(160px,2.2fr) 94px;gap:14px;align-items:center}
+    .rank-name strong{display:block;font-size:13px}
+    .rank-name span{font-size:11px;color:var(--muted)}
+    .bar-track{height:28px;border-radius:7px;background:var(--panel-2);position:relative;overflow:hidden}
+    .bar-current,.bar-prev{position:absolute;left:0;border-radius:7px}
+    .bar-prev{top:10px;height:8px;background:var(--line)}
+    .bar-current{top:3px;height:8px;background:var(--accent)}
+    .rank-value{text-align:right}
+    .rank-value strong{display:block;font-size:13px}
+    .rank-value span{font-size:11px;color:var(--accent);font-weight:600}
+    .rank-value span.negative{color:var(--danger)}
+    .detail-foot{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:22px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+    .data-actions{display:flex;gap:8px}
+    .text-btn{border:0;background:transparent;color:var(--accent);cursor:pointer;font-weight:600;padding:6px}
+    .story{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+    .story article{padding:20px;border-top:3px solid var(--accent);background:var(--panel);border-radius:0 0 var(--radius-md) var(--radius-md)}
+    .story article:last-child{border-top-color:var(--orange)}
+    .story small{color:var(--muted)}
+    .story h3{font-family:"IBM Plex Sans",sans-serif;margin:8px 0 10px;font-size:17px}
+    .story p{margin:0;color:var(--muted);font-size:13px;line-height:1.65}
+    .data-layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:16px;align-items:start}
+    .table-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:22px;overflow:hidden}
+    .table-wrap{overflow:auto;margin-top:16px;border:1px solid var(--line);border-radius:12px}
+    table{width:100%;border-collapse:collapse;min-width:650px;font-size:13px}
+    th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line)}
+    th{background:var(--panel-2);color:var(--muted);font-size:11px;font-weight:600}
+    tbody tr:last-child td{border-bottom:0}
+    .data-note{background:var(--panel);border:1px solid var(--line);padding:20px;border-radius:var(--radius-md)}
+    .data-note h3{font-family:"IBM Plex Sans",sans-serif;font-size:16px;margin:0 0 10px}
+    .data-note p,.data-note li{color:var(--muted);font-size:13px}
+    .data-note ul{padding-left:18px;margin:12px 0 0}
+    .download{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;width:100%;border:0;background:var(--accent);color:#fff;border-radius:11px;padding:10px 14px;font-weight:600;cursor:pointer}
+    @media (prefers-color-scheme:dark){.download{color:#102019}}
+    .download svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
+    .upload-trigger{display:inline-flex;align-items:center;gap:8px;border:0;background:var(--accent);color:#fff;border-radius:11px;padding:10px 14px;font-weight:600;cursor:pointer;white-space:nowrap}
+    @media (prefers-color-scheme:dark){.upload-trigger{color:#102019}}
+    .upload-trigger svg,.upload-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}
+    .upload-panel{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;background:var(--panel);border:1px dashed color-mix(in srgb,var(--accent) 50%,var(--line));border-radius:var(--radius-md);padding:14px 16px;margin-bottom:18px;transition:border-color .2s,background .2s}
+    .upload-panel.dragging{border-color:var(--accent);background:var(--accent-soft)}
+    .upload-icon{width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+    .upload-copy strong{display:block;font-size:14px}.upload-copy span{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+    .upload-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.template-btn,.reset-btn{border:1px solid var(--line);background:transparent;color:var(--accent);border-radius:10px;padding:9px 12px;font-weight:600;cursor:pointer}.template-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px}.template-btn:hover,.reset-btn:hover{border-color:var(--accent);background:var(--accent-soft)}.template-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}.reset-btn{display:none}.reset-btn.visible{display:block}
+    .source-status{margin:-7px 0 16px;color:var(--muted);font-size:12px;display:none}.source-status.visible{display:block}.source-status strong{color:var(--text)}.source-status.error{color:var(--danger);background:var(--orange-soft);border:1px solid color-mix(in srgb,var(--danger) 28%,var(--line));border-radius:10px;padding:10px 12px;margin-top:-7px}
+    .visual-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:16px;margin-top:16px}
+    .visual-card{padding:21px}.mix-layout{display:grid;grid-template-columns:170px 1fr;gap:22px;align-items:center}.donut-wrap{position:relative;width:164px;height:164px;margin:auto}.donut{width:100%;height:100%;border-radius:50%;background:conic-gradient(var(--accent) 0 40%,var(--blue) 40% 70%,var(--lime) 70% 100%);position:relative}.donut:after{content:"";position:absolute;inset:33px;border-radius:50%;background:var(--panel)}.donut-center{position:absolute;inset:0;display:grid;place-content:center;text-align:center;z-index:1}.donut-center strong{font-size:22px;letter-spacing:-.04em}.donut-center span{font-size:11px;color:var(--muted)}
+    .mix-legend{display:grid;gap:11px}.mix-item{display:grid;grid-template-columns:9px 1fr auto;gap:8px;align-items:center;font-size:12px}.mix-item i{width:8px;height:8px;border-radius:50%}.mix-item span{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mix-item strong{font-weight:600}
+    #opsChart{display:block;width:100%;height:auto;min-height:185px}.empty-chart{min-height:164px;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:13px;padding:24px}.byline{margin-top:24px;padding-top:18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;color:var(--muted);font-size:12px}.byline strong{color:var(--text)}
+    .section-intro{display:flex;align-items:end;justify-content:space-between;gap:24px;margin:30px 2px 14px}.section-intro h2{margin:0;font-size:22px;letter-spacing:-.03em}.section-intro p{margin:5px 0 0;color:var(--muted);font-size:13px;max-width:680px}.section-kicker{color:var(--accent);font-size:12px;font-weight:700;margin-bottom:4px}.diagnostic-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,.7fr);gap:16px}.bridge-card,.score-card,.action-card,.risk-card,.contribution-card,.portfolio-card,.quality-card{padding:22px}.bridge{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:end;margin-top:22px}.bridge-step{min-width:0}.bridge-step span{display:block;color:var(--muted);font-size:11px;margin-bottom:7px}.bridge-step strong{display:block;font-size:18px;letter-spacing:-.03em;margin-bottom:8px}.bridge-bar{height:8px;background:var(--panel-2);border-radius:5px;overflow:hidden}.bridge-bar i{display:block;height:100%;border-radius:5px;background:var(--accent)}.bridge-step.effect-positive strong{color:var(--accent)}.bridge-step.effect-negative strong{color:var(--danger)}.bridge-step.effect-neutral strong{color:var(--blue)}.bridge-explain{margin:18px 0 0;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);line-height:1.6}.score-layout{display:grid;grid-template-columns:108px 1fr;gap:18px;align-items:center;margin-top:20px}.score-ring{width:104px;height:104px;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(var(--accent) 0 72%,var(--panel-2) 72%)}.score-ring:after{content:"";position:absolute;inset:11px;border-radius:50%;background:var(--panel)}.score-ring div{position:relative;z-index:1;text-align:center}.score-ring strong{display:block;font-size:29px;letter-spacing:-.06em}.score-ring span{font-size:10px;color:var(--muted)}.score-copy strong{font-size:15px}.score-copy p{font-size:12px;color:var(--muted);margin:5px 0 0}.score-checks{display:grid;gap:8px;margin-top:18px}.score-check{display:grid;grid-template-columns:1fr auto;gap:10px;font-size:12px}.score-check span{color:var(--muted)}.score-check strong.good{color:var(--accent)}.score-check strong.watch{color:var(--orange)}.score-check strong.risk{color:var(--danger)}.decision-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:16px;margin-top:16px}.action-list{display:grid;gap:0;margin-top:8px}.action-item{display:grid;grid-template-columns:46px 1fr auto;gap:13px;align-items:start;padding:15px 0;border-bottom:1px solid var(--line)}.action-item:last-child{border-bottom:0;padding-bottom:0}.action-rank{width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;font-size:12px}.action-item h3{font-size:14px;margin:0 0 4px}.action-item p{font-size:12px;color:var(--muted);line-height:1.55;margin:0}.impact-tag{font-size:10px;font-weight:700;padding:5px 7px;border-radius:7px;background:var(--panel-2);color:var(--muted);white-space:nowrap}.risk-list{display:grid;gap:11px;margin-top:18px}.risk-row{display:grid;grid-template-columns:1fr auto;gap:12px;padding-bottom:11px;border-bottom:1px solid var(--line)}.risk-row:last-child{border:0;padding:0}.risk-row strong{display:block;font-size:13px}.risk-row p{margin:3px 0 0;color:var(--muted);font-size:11px}.risk-state{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:5px 7px;border-radius:7px;height:max-content}.risk-state.low{background:var(--accent-soft);color:var(--accent)}.risk-state.medium{background:var(--orange-soft);color:var(--orange)}.risk-state.high{background:var(--orange-soft);color:var(--danger)}.driver-depth{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.5fr);gap:16px;margin-top:16px}.driver-table{width:100%;min-width:760px}.driver-table td,.driver-table th{padding:11px 12px}.driver-table .positive{color:var(--accent);font-weight:600}.driver-table .negative{color:var(--danger);font-weight:600}.recommendation{display:inline-block;padding:4px 7px;border-radius:6px;background:var(--panel-2);font-size:10px;font-weight:700;color:var(--muted)}.portfolio-list{display:grid;gap:14px;margin-top:18px}.portfolio-metric{display:grid;grid-template-columns:1fr auto;gap:12px}.portfolio-metric span{font-size:12px;color:var(--muted)}.portfolio-metric strong{font-size:13px;text-align:right}.portfolio-metric small{display:block;grid-column:1/-1;color:var(--subtle);font-size:10px;margin-top:-8px}.quality-card{margin-top:16px}.quality-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}.quality-item{padding:14px;background:var(--panel-2);border-radius:11px}.quality-item span{display:block;color:var(--muted);font-size:11px}.quality-item strong{display:block;font-size:18px;margin:6px 0 3px}.quality-item small{color:var(--subtle);font-size:10px}.method-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}.method-grid h4{font-size:12px;margin:0 0 6px}.method-grid p{font-size:11px;color:var(--muted);margin:0;line-height:1.55}
+    .brief-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:16px}.brief-main,.brief-side,.hypothesis-card,.scenario-card,.sensitivity-card{padding:24px}.brief-statement{font-size:clamp(22px,3vw,34px);line-height:1.25;letter-spacing:-.04em;margin:8px 0 20px;max-width:820px}.brief-statement strong{color:var(--accent)}.brief-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;border-top:1px solid var(--line);padding-top:17px}.brief-metric span{display:block;font-size:11px;color:var(--muted)}.brief-metric strong{display:block;font-size:20px;margin-top:4px}.brief-side h2,.hypothesis-card h2,.scenario-card h2,.sensitivity-card h2{font-size:18px;margin:0}.brief-side ol{list-style:none;padding:0;margin:16px 0 0;counter-reset:priority}.brief-side li{counter-increment:priority;padding:13px 0 13px 40px;border-bottom:1px solid var(--line);position:relative;font-size:13px}.brief-side li:before{content:counter(priority,decimal-leading-zero);position:absolute;left:0;top:12px;color:var(--accent);font-weight:700}.brief-side li:last-child{border:0}.brief-side li strong{display:block;margin-bottom:3px}.brief-side li span{color:var(--muted);font-size:11px}.hypothesis-card{margin-top:16px}.issue-tree{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:18px}.issue-branch{background:var(--panel);padding:18px}.issue-branch header{display:flex;justify-content:space-between;gap:10px;align-items:start;margin-bottom:14px}.issue-branch h3{font-size:14px;margin:0}.issue-branch header span{font-size:10px;padding:4px 6px;background:var(--panel-2);color:var(--muted);border-radius:5px}.issue-branch p{font-size:12px;color:var(--muted);line-height:1.55;margin:0}.issue-evidence{display:grid;gap:7px;margin-top:14px}.issue-evidence div{font-size:11px;display:flex;justify-content:space-between;gap:10px}.issue-evidence span{color:var(--muted)}.consulting-note{margin-top:16px;padding:14px 16px;background:var(--panel-2);border-radius:10px;font-size:12px;color:var(--muted);display:flex;gap:12px;align-items:start}.consulting-note strong{color:var(--text);white-space:nowrap}.outlook-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,.6fr);gap:16px}.scenario-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}.scenario{padding:16px;background:var(--panel-2);border-radius:11px}.scenario.active{background:var(--accent-soft)}.scenario span{display:block;color:var(--muted);font-size:11px}.scenario strong{display:block;font-size:22px;letter-spacing:-.04em;margin:5px 0}.scenario small{color:var(--subtle);font-size:10px}.outlook-chart{width:100%;height:auto;display:block;margin-top:14px}.sensitivity-list{display:grid;gap:14px;margin-top:18px}.sensitivity-row{display:grid;grid-template-columns:1fr auto;gap:10px}.sensitivity-row span{font-size:12px;color:var(--muted)}.sensitivity-row strong{font-size:13px}.sensitivity-row .meter{grid-column:1/-1;height:7px;background:var(--panel-2);border-radius:4px;overflow:hidden}.sensitivity-row .meter i{display:block;height:100%;background:var(--accent);border-radius:4px}.decision-log{margin-top:16px;padding:22px}.decision-log-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}.decision-log article{padding-right:16px;border-right:1px solid var(--line)}.decision-log article:last-child{border:0}.decision-log small{color:var(--accent);font-weight:700}.decision-log h3{font-size:14px;margin:6px 0}.decision-log p{font-size:11px;color:var(--muted);margin:0;line-height:1.55}
+    .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--text);color:var(--panel);padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:20}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    @media (max-width:900px){
+      .hero{grid-template-columns:1fr}.hero-note{border-left:0;border-top:1px solid var(--line);padding:15px 0 0;display:flex;justify-content:space-between;gap:20px}.dashboard-grid,.data-layout,.visual-grid,.diagnostic-grid,.decision-grid,.driver-depth,.brief-layout,.outlook-grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.quality-grid{grid-template-columns:1fr 1fr}.issue-tree{grid-template-columns:1fr}.decision-log-grid{grid-template-columns:1fr}.decision-log article{border-right:0;border-bottom:1px solid var(--line);padding:0 0 14px}.decision-log article:last-child{border-bottom:0}
+    }
+    @media (max-width:620px){
+      .wrap{width:min(100% - 22px,1180px);padding-top:18px}.topline{align-items:flex-start}.sample-tag{display:none}.hero{gap:16px;margin-bottom:15px}.hero h1{font-size:37px;letter-spacing:-.05em}.hero-note{display:block}.hero-note p{margin-bottom:8px}.nav{display:grid;grid-template-columns:repeat(5,1fr);overflow:visible}.nav button{padding:12px 2px;font-size:11px;white-space:normal}.upload-panel{grid-template-columns:auto 1fr}.upload-actions{grid-column:1/-1}.upload-trigger,.template-btn,.reset-btn{flex:1;justify-content:center}.kpis{grid-template-columns:1fr 1fr;gap:9px}.kpi{padding:14px}.kpi-value{font-size:26px;margin-top:14px}.kpi-head span{font-size:12px}.dashboard-grid{gap:12px}.chart-card,.insight-card,.detail-card,.visual-card,.bridge-card,.score-card,.action-card,.risk-card,.contribution-card,.portfolio-card,.quality-card{padding:17px;border-radius:18px}.card-head{display:block}.legend{justify-content:flex-start;margin-top:10px}.detail-head{display:block}.segmented{margin-top:14px}.rank-row{grid-template-columns:92px 1fr 76px;gap:9px}.story{grid-template-columns:1fr}.data-actions{display:none}#trendChart{min-height:230px}.top-actions{gap:6px}#topUpload{display:none}.scope span{max-width:180px;overflow:hidden;text-overflow:ellipsis}.mix-layout{grid-template-columns:135px 1fr;gap:14px}.donut-wrap{width:132px;height:132px}.donut:after{inset:28px}.byline{display:block}.byline span{display:block;margin-bottom:4px}.section-intro{display:block;margin-top:24px}.bridge{grid-template-columns:1fr 1fr}.score-layout{grid-template-columns:92px 1fr}.score-ring{width:88px;height:88px}.score-ring strong{font-size:25px}.action-item{grid-template-columns:40px 1fr}.impact-tag{grid-column:2}.quality-grid{grid-template-columns:1fr 1fr}.method-grid{grid-template-columns:1fr}.driver-depth{gap:12px}.contribution-card{overflow:hidden}.contribution-card .table-wrap{margin-left:-4px;margin-right:-4px}.table-wrap{overflow:visible;border:0}.table-wrap table{min-width:0}.table-wrap thead{display:none}.table-wrap tbody,.table-wrap tr{display:block}.table-wrap tr{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:7px 11px}.table-wrap td{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border:0;text-align:right}.table-wrap td:before{color:var(--muted);font-size:10px;font-weight:600;text-align:left}.table-card td:nth-child(1):before{content:'Month'}.table-card td:nth-child(2):before{content:'Net revenue'}.table-card td:nth-child(3):before{content:'Volume'}.table-card td:nth-child(4):before{content:'Gross margin'}.table-card td:nth-child(5):before{content:'Avg. value'}.driver-table td:nth-child(1):before{content:'Segment'}.driver-table td:nth-child(2):before{content:'Revenue'}.driver-table td:nth-child(3):before{content:'Mix'}.driver-table td:nth-child(4):before{content:'Growth'}.driver-table td:nth-child(5):before{content:'Net change'}.driver-table td:nth-child(6):before{content:'Margin'}.driver-table td:nth-child(7):before{content:'Posture'}.brief-metrics{grid-template-columns:1fr 1fr}.brief-main,.brief-side,.hypothesis-card,.scenario-card,.sensitivity-card,.decision-log{padding:17px}.issue-branch{padding:15px}.scenario-strip{grid-template-columns:1fr}.consulting-note{display:block}.consulting-note strong{display:block;margin-bottom:5px}
+    }
+    @media (max-width:390px){.hero h1{font-size:33px}.kpi{padding:13px}.kpi-value{font-size:24px}.rank-row{grid-template-columns:78px 1fr 66px}.rank-name span{display:none}}
+    @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.spinner{animation:none}.toast{transition:none}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="topline">
+      <div class="scope">
+        <span class="scope-mark" aria-hidden="true"></span>
+        <div><strong id="scopeTitle">Northstar Retail · Canada</strong><span id="scopePeriod">Q3 2026 · vs. previous quarter</span></div>
+      </div>
+      <div class="top-actions">
+        <span class="sample-tag" id="datasetTag">Sample dataset</span>
+        <button class="upload-trigger" id="topUpload" type="button"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4M5 15v4h14v-4"/></svg>Upload CSV</button>
+        <button class="icon-btn" id="quickDownload" aria-label="Download sample data" title="Download sample data">
+          <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <section class="hero">
+      <h1>From business data<br>to <em>decisions that move.</em></h1>
+      <div class="hero-note">
+        <p>The embedded analytics engine identifies growth drivers, anomalies, and emerging risks, then turns them into an executive-ready brief.</p>
+        <div><strong>Quarterly readout</strong><span id="heroVerdict">Healthy growth, widening channel divergence</span></div>
+      </div>
+    </section>
+
+    <nav class="nav" aria-label="Dashboard views">
+      <button class="active" data-view="brief">Executive brief</button>
+      <button data-view="overview">Performance</button>
+      <button data-view="drivers">Growth drivers</button>
+      <button data-view="outlook">Outlook</button>
+      <button data-view="data">Data &amp; methods</button>
+    </nav>
+
+    <section class="upload-panel" id="uploadPanel" aria-label="CSV upload">
+      <div class="upload-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4M5 15v4h14v-4"/></svg></div>
+      <div class="upload-copy"><strong>Analyze your own CSV</strong><span>Drop a file here or choose one. New to the format? Download the empty template, fill one row per order, and upload it here.</span></div>
+      <div class="upload-actions"><button class="upload-trigger" id="chooseCsv" type="button">Choose CSV</button><button class="template-btn" id="downloadTemplate" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"/></svg>Download template</button><button class="reset-btn visible" id="tryCsv" type="button">Try example</button><button class="reset-btn" id="resetData" type="button">Use sample data</button></div>
+      <input id="csvInput" type="file" accept=".csv,text/csv" hidden />
+    </section>
+    <p class="source-status" id="sourceStatus" role="status" aria-live="polite"></p>
+
+    <section class="view active" id="brief">
+      <div class="brief-layout">
+        <article class="card brief-main">
+          <div class="section-kicker">EXECUTIVE READOUT</div>
+          <p class="brief-statement" id="briefStatement"></p>
+          <div class="brief-metrics" id="briefMetrics"></div>
+        </article>
+        <aside class="card brief-side">
+          <h2>Management agenda</h2>
+          <ol id="managementAgenda"></ol>
+        </aside>
+      </div>
+      <article class="card hypothesis-card">
+        <div class="card-head"><div><h2>Issue tree</h2><p>A structured view of performance, economics, and execution priorities</p></div></div>
+        <div class="issue-tree" id="issueTree"></div>
+        <div class="consulting-note"><strong>Executive takeaway</strong><span id="executiveTakeaway"></span></div>
+      </article>
+    </section>
+
+    <section class="view" id="overview">
+      <div class="kpis" id="kpis"></div>
+      <div class="dashboard-grid">
+        <article class="card chart-card">
+          <div class="card-head">
+            <div><h2>Revenue trend</h2><p id="trendUnit">Monthly net revenue (CAD millions)</p></div>
+            <div class="legend"><span><i></i>Actual</span><span><i></i>Quarterly target</span></div>
+          </div>
+          <svg id="trendChart" viewBox="0 0 700 300" role="img" aria-label="Monthly revenue trend from April to September 2026"></svg>
+          <div class="chart-caption" id="trendCaption"></div>
+        </article>
+
+        <aside class="card insight-card">
+          <div class="ai-head">
+            <div class="ai-label"><span class="ai-dot" aria-hidden="true"></span><h2>AI insight brief</h2></div>
+            <span class="analysis-time" id="analysisTime">Rule-based analysis complete</span>
+          </div>
+          <p class="insight-summary" id="insightSummary"></p>
+          <div class="signals" id="signals"></div>
+          <button class="rerun" id="rerun"><span class="spinner"></span><span class="rerunText">Regenerate analysis</span></button>
+        </aside>
+      </div>
+      <div class="visual-grid">
+        <article class="card visual-card">
+          <div class="card-head"><div><h2>Revenue mix</h2><p id="mixSubtitle">Current quarter by region</p></div><div class="segmented" id="mixPicker" aria-label="Revenue mix dimension"></div></div>
+          <div class="mix-layout" id="mixChart"></div>
+        </article>
+        <article class="card visual-card">
+          <div class="card-head"><div><h2>Operating profile</h2><p>Monthly sales volume with gross margin overlay</p></div><div class="legend"><span><i></i><span id="volumeLegend">Orders</span></span><span><i style="background:var(--orange);border:0"></i>Gross margin</span></div></div>
+          <svg id="opsChart" viewBox="0 0 700 220" role="img" aria-label="Monthly orders and gross margin"></svg>
+        </article>
+      </div>
+
+      <div class="section-intro">
+        <div><div class="section-kicker">DECISION INTELLIGENCE</div><h2>What changed, why it matters, and what to do next</h2></div>
+        <p>Diagnostics connect topline movement to volume, value, margin, concentration, and stability—not just a list of KPI deltas.</p>
+      </div>
+      <div class="diagnostic-grid">
+        <article class="card bridge-card">
+          <div class="card-head"><div><h2>Revenue change bridge</h2><p id="bridgeSubtitle">Period-over-period decomposition</p></div></div>
+          <div class="bridge" id="revenueBridge"></div>
+          <p class="bridge-explain" id="bridgeExplain"></p>
+        </article>
+        <article class="card score-card">
+          <div class="card-head"><div><h2>Business health signal</h2><p>Four transparent operating checks</p></div></div>
+          <div class="score-layout">
+            <div class="score-ring" id="scoreRing"><div><strong id="healthScore">—</strong><span>out of 100</span></div></div>
+            <div class="score-copy"><strong id="healthLabel">Calculating signal</strong><p id="healthCopy">Growth, margin, volume, and recent momentum are scored equally.</p></div>
+          </div>
+          <div class="score-checks" id="scoreChecks"></div>
+        </article>
+      </div>
+      <div class="decision-grid">
+        <article class="card action-card">
+          <div class="card-head"><div><h2>Recommended management actions</h2><p>Prioritized from measured performance signals</p></div></div>
+          <div class="action-list" id="actionList"></div>
+        </article>
+        <aside class="card risk-card">
+          <div class="card-head"><div><h2>Risk radar</h2><p>Leading indicators worth monitoring</p></div></div>
+          <div class="risk-list" id="riskList"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view" id="drivers">
+      <article class="card detail-card">
+        <div class="detail-head">
+          <div><h2>Growth-driver analysis</h2><p>Rankings, period-over-period change, and revenue contribution</p></div>
+          <div class="segmented" id="dimensionPicker" aria-label="Analysis dimension">
+            <button class="active" data-dim="region">Region</button>
+            <button data-dim="channel">Channel</button>
+            <button data-dim="category">Category</button>
+          </div>
+        </div>
+        <div class="ranking" id="ranking"></div>
+        <div class="detail-foot">
+          <span id="rankFoot">Solid bars show current-period revenue; thin bars show the previous period</span>
+          <div class="data-actions"><button class="text-btn" data-view-jump="data">View underlying data →</button></div>
+        </div>
+      </article>
+      <div class="story" id="driverStories"></div>
+      <div class="driver-depth">
+        <article class="card contribution-card">
+          <div class="card-head"><div><h2>Segment contribution ledger</h2><p>Revenue share, growth, net-change contribution, margin, and recommended posture</p></div></div>
+          <div class="table-wrap"><table class="driver-table"><thead><tr><th>Segment</th><th>Revenue</th><th>Mix</th><th>Growth</th><th>Net change</th><th>Margin</th><th>Posture</th></tr></thead><tbody id="driverTableRows"></tbody></table></div>
+        </article>
+        <aside class="card portfolio-card">
+          <div class="card-head"><div><h2>Portfolio diagnostics</h2><p id="portfolioSubtitle">Current dimension</p></div></div>
+          <div class="portfolio-list" id="portfolioMetrics"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view" id="outlook">
+      <div class="outlook-grid">
+        <article class="card scenario-card">
+          <div class="card-head"><div><h2>Decision scenarios</h2><p>Illustrative quarterly revenue sensitivities—not forecasts</p></div></div>
+          <div class="scenario-strip" id="scenarioStrip"></div>
+          <svg class="outlook-chart" id="outlookChart" viewBox="0 0 760 280" role="img" aria-label="Illustrative revenue scenarios"></svg>
+          <div class="chart-caption">Scenarios apply transparent growth sensitivities to the latest three-month run rate. They do not model seasonality, capacity, competitor response, or external events.</div>
+        </article>
+        <aside class="card sensitivity-card">
+          <div class="card-head"><div><h2>Sensitivity levers</h2><p>Approximate revenue impact from a 1% change</p></div></div>
+          <div class="sensitivity-list" id="sensitivityList"></div>
+        </aside>
+      </div>
+      <article class="card decision-log">
+        <div class="card-head"><div><h2>90-day decision roadmap</h2><p>From diagnosis to controlled execution</p></div></div>
+        <div class="decision-log-grid" id="decisionRoadmap"></div>
+      </article>
+    </section>
+
+    <section class="view" id="data">
+      <div class="data-layout">
+        <article class="table-card">
+          <div class="detail-head">
+            <div><h2 id="dataTitle">Sample data preview</h2><p id="dataSubtitle">Northstar Retail aggregated operating data · Q2–Q3 2026</p></div>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>Month</th><th>Net revenue</th><th id="volumeHeader">Orders</th><th>Gross margin</th><th id="aovHeader">Average order value</th></tr></thead><tbody id="dataRows"></tbody></table></div>
+        </article>
+        <aside class="data-note">
+          <h3>Analysis methods</h3>
+          <p id="methodCopy">Every metric and narrative insight is calculated from the same dataset in the page, keeping charts and commentary aligned.</p>
+          <ul><li id="comparisonMethod">Quarter-over-quarter: Q3 vs. Q2</li><li>Revenue bridge: isolates volume and value/mix effects</li><li>Contribution: segment change / net portfolio change</li><li>Health signal: four equally weighted evidence checks</li></ul>
+          <button class="download" id="downloadCsv"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"/></svg><span id="downloadLabel">Download full CSV</span></button>
+        </aside>
+      </div>
+      <article class="card quality-card">
+        <div class="card-head"><div><h2>Data readiness &amp; analytical coverage</h2><p>What the current file can support—and where interpretation needs caution</p></div></div>
+        <div class="quality-grid" id="qualityGrid"></div>
+        <div class="method-grid">
+          <div><h4>Interpretation boundary</h4><p>These are descriptive diagnostics, not causal proof. A segment correlation or period-over-period movement should be validated against campaign, inventory, pricing, and operational context before action.</p></div>
+          <div><h4>Comparison logic</h4><p>The latest three monthly periods are compared with the preceding three when six or more months are available. Shorter files are split into earlier and later halves.</p></div>
+        </div>
+      </article>
+    </section>
+    <footer class="byline"><span>AI-assisted business analytics portfolio project</span><span>Designed &amp; built by <strong>Fan (David) Xu</strong></span></footer>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const sampleMonthly = [
+      {month:'2026-04',revenue:3.72,orders:9630,margin:36.8,aov:386.29},
+      {month:'2026-05',revenue:3.88,orders:9870,margin:37.2,aov:393.11},
+      {month:'2026-06',revenue:4.04,orders:10480,margin:37.9,aov:385.50},
+      {month:'2026-07',revenue:4.01,orders:10220,margin:38.1,aov:392.37},
+      {month:'2026-08',revenue:4.12,orders:10350,margin:38.6,aov:398.07},
+      {month:'2026-09',revenue:4.35,orders:10850,margin:39.1,aov:400.92}
+    ];
+    const sampleDimensions = {
+      region:[
+        {name:'Ontario',current:4.66,previous:4.15,margin:41.2},
+        {name:'Western Canada',current:3.18,previous:2.97,margin:37.8},
+        {name:'Quebec',current:2.74,previous:2.68,margin:36.1},
+        {name:'Atlantic Canada',current:1.90,previous:1.84,margin:35.4}
+      ],
+      channel:[
+        {name:'Direct online',current:5.12,previous:4.39,margin:42.7},
+        {name:'Retail stores',current:6.11,previous:6.13,margin:36.8},
+        {name:'Channel partners',current:1.25,previous:1.12,margin:34.3}
+      ],
+      category:[
+        {name:'Tech accessories',current:3.56,previous:3.04,margin:43.1},
+        {name:'Office equipment',current:2.97,previous:2.79,margin:37.6},
+        {name:'Smart home',current:2.61,previous:2.48,margin:39.3},
+        {name:'Audio',current:1.98,previous:1.91,margin:35.8},
+        {name:'Value-added services',current:1.36,previous:1.42,margin:31.4}
+      ]
+    };
+    let monthly=sampleMonthly.map(d=>({...d}));
+    let dimensions=JSON.parse(JSON.stringify(sampleDimensions));
+    let sourceName='Northstar Retail sample';
+    let uploadedText='';
+    let volumeLabel='Orders';
+    let q2=[],q3=[],q2Revenue=0,q3Revenue=0,comparisonLabel='Q3 vs. Q2';
+    const total = rows => rows.reduce((s,r)=>s+(Number(r.revenue)||0),0);
+    const sum = (rows,key)=>rows.reduce((s,r)=>s+(Number(r[key])||0),0);
+    const weighted = (rows,value,weight)=>{const valid=rows.filter(r=>Number.isFinite(r[value])&&Number.isFinite(r[weight]));const den=sum(valid,weight);return den?valid.reduce((s,r)=>s+r[value]*r[weight],0)/den:null};
+    const pct = (a,b)=>b?((a/b)-1)*100:0;
+    function updatePeriods(){
+      const split=monthly.length>=6?monthly.length-3:Math.max(1,Math.floor(monthly.length/2));
+      q2=monthly.slice(Math.max(0,split-3),split);q3=monthly.slice(split);
+      if(!q3.length){q3=monthly.slice();q2=[]}
+      q2Revenue=total(q2);q3Revenue=total(q3);
+      comparisonLabel=q2.length?`${q3[0].month}–${q3[q3.length-1].month} vs. ${q2[0].month}–${q2[q2.length-1].month}`:'Current period';
+    }
+    const fmtPct = n => Number.isFinite(n)?`${n>=0?'+':''}${n.toFixed(1)}%`:'—';
+    const fmtMoney = n => Number.isFinite(n)?(Math.abs(n)<1?`$${(n*1000).toFixed(Math.abs(n)>=.1?0:2)}K`:`$${n.toFixed(2)}M`):'—';
+    const svgNS='http://www.w3.org/2000/svg';
+    const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+    function renderKpis(){
+      const hasOrders=q3.some(r=>Number.isFinite(r.orders)),q2Orders=sum(q2,'orders'),q3Orders=sum(q3,'orders');
+      const q2Margin=weighted(q2,'margin','revenue'),q3Margin=weighted(q3,'margin','revenue');
+      const q2Aov=hasOrders&&q2Orders?(q2Revenue*1000000)/q2Orders:null,q3Aov=hasOrders&&q3Orders?(q3Revenue*1000000)/q3Orders:null;
+      const compare=q2.length?'vs. previous period':'current period';
+      const data=[
+        {label:'Net revenue',value:fmtMoney(q3Revenue),delta:q2.length?fmtPct(pct(q3Revenue,q2Revenue)):'Latest',note:compare,icon:'M4 17l5-5 4 3 7-8M16 7h4v4'},
+        {label:'Gross margin',value:Number.isFinite(q3Margin)?`${q3Margin.toFixed(1)}%`:'Not provided',delta:Number.isFinite(q2Margin)&&Number.isFinite(q3Margin)?`${q3Margin-q2Margin>=0?'+':''}${(q3Margin-q2Margin).toFixed(1)}pp`:'—',note:compare,icon:'M4 19V9m5 10V5m5 14v-7m5 7V3'},
+        {label:volumeLabel==='Units'?'Units sold':'Order volume',value:hasOrders?q3Orders.toLocaleString('en-CA'):'Not provided',delta:hasOrders&&q2.length?fmtPct(pct(q3Orders,q2Orders)):'—',note:compare,icon:'M6 7h12l-1 12H7L6 7Zm3 0V5a3 3 0 0 1 6 0v2'},
+        {label:volumeLabel==='Units'?'Revenue per unit':'Average order value',value:Number.isFinite(q3Aov)?`$${q3Aov.toFixed(0)}`:'Not provided',delta:Number.isFinite(q2Aov)&&Number.isFinite(q3Aov)?fmtPct(pct(q3Aov,q2Aov)):'—',note:compare,icon:'M12 3v18m4-14.5c-1-1-2.3-1.5-4-1.5-2.2 0-4 1.2-4 3s1.8 2.5 4 3 4 1.2 4 3-1.8 3-4 3c-1.7 0-3.2-.5-4.3-1.6'}
+      ];
+      document.getElementById('kpis').innerHTML=data.map(d=>`<article class="kpi"><div class="kpi-head"><span>${d.label}</span><svg viewBox="0 0 24 24"><path d="${d.icon}"/></svg></div><div class="kpi-value">${d.value}</div><div class="delta"><strong>${d.delta}</strong>${d.note}</div></article>`).join('');
+    }
+
+    function make(tag,attrs,parent){const el=document.createElementNS(svgNS,tag);Object.entries(attrs||{}).forEach(([k,v])=>el.setAttribute(k,v));if(parent)parent.appendChild(el);return el}
+    function renderTrend(){
+      const svg=document.getElementById('trendChart');svg.innerHTML='';
+      const W=700,H=300,p={l:50,r:20,t:18,b:42};
+      const target=Math.max(...q3.map(d=>d.revenue),0)*1.03;
+      const rawMax=Math.max(...monthly.map(d=>d.revenue),target,.0001),max=rawMax*1.14;
+      const min=0,useThousands=max<1;
+      document.getElementById('trendUnit').textContent=`Monthly net revenue (CAD ${useThousands?'thousands':'millions'})`;
+      const x=i=>monthly.length===1?(p.l+W-p.r)/2:p.l+i*(W-p.l-p.r)/(monthly.length-1);
+      const y=v=>p.t+(max-v)/(max-min)*(H-p.t-p.b);
+      for(let i=0;i<=4;i++){const t=max*i/4;
+        make('line',{x1:p.l,y1:y(t),x2:W-p.r,y2:y(t),stroke:css('--line'),'stroke-width':1},svg);
+        const tx=make('text',{x:p.l-10,y:y(t)+4,'text-anchor':'end',fill:css('--subtle'),'font-size':11},svg);tx.textContent=useThousands?(t*1000).toFixed(t*1000<10?1:0):t.toFixed(max<5?1:0);
+      }
+      const targetY=y(target);make('line',{x1:p.l,y1:targetY,x2:W-p.r,y2:targetY,stroke:css('--subtle'),'stroke-width':1.5,'stroke-dasharray':'5 5'},svg);
+      let path='';monthly.forEach((d,i)=>{path+=`${i?'L':'M'} ${x(i)} ${y(d.revenue)} `});
+      const area=`${path} L ${x(monthly.length-1)} ${y(0)} L ${x(0)} ${y(0)} Z`;
+      const defs=make('defs',{},svg);const grad=make('linearGradient',{id:'trendFill',x1:'0',y1:'0',x2:'0',y2:'1'},defs);make('stop',{offset:'0%','stop-color':css('--accent'),'stop-opacity':.2},grad);make('stop',{offset:'100%','stop-color':css('--accent'),'stop-opacity':0},grad);
+      make('path',{d:area,fill:'url(#trendFill)'},svg);make('path',{d:path,fill:'none',stroke:css('--accent'),'stroke-width':3,'stroke-linecap':'round','stroke-linejoin':'round'},svg);
+      monthly.forEach((d,i)=>{
+        const c=make('circle',{cx:x(i),cy:y(d.revenue),r:5,fill:css('--panel'),stroke:css('--accent'),'stroke-width':3,tabindex:0},svg);const title=make('title',{},c);title.textContent=`${d.month}: $${d.revenue.toFixed(2)}M`;
+        const label=make('text',{x:x(i),y:H-16,'text-anchor':'middle',fill:css('--muted'),'font-size':11},svg);label.textContent=new Date(`${d.month}-01T00:00:00`).toLocaleDateString('en-CA',{month:'short'});
+      });
+      const first=monthly[0],last=monthly[monthly.length-1],growth=pct(last.revenue,first.revenue);
+      const direction=growth>=0?'rose':'declined';
+      document.getElementById('trendChart').setAttribute('aria-label',`Monthly revenue trend from ${first.month} to ${last.month}`);
+      document.getElementById('trendCaption').textContent=`Revenue ${direction} from ${fmtMoney(first.revenue)} in ${first.month} to ${fmtMoney(last.revenue)} in ${last.month}, a ${Math.abs(growth).toFixed(1)}% change across the visible period.`;
+    }
+
+    function renderInsights(){
+      const growth=q2.length?pct(q3Revenue,q2Revenue):0;
+      const available=Object.entries(dimensions).filter(([,rows])=>rows&&rows.length);
+      const movers=available.flatMap(([dim,rows])=>rows.map(r=>({...r,dim,growth:pct(r.current,r.previous)}))).sort((a,b)=>b.growth-a.growth);
+      const top=movers[0],risk=[...movers].sort((a,b)=>a.growth-b.growth)[0];
+      const margin=weighted(q3,'margin','revenue');
+      document.getElementById('insightSummary').innerHTML=q2.length?`Revenue <strong>${growth>=0?'increased':'decreased'} ${Math.abs(growth).toFixed(1)}%</strong> versus the previous period${top?`, with ${esc(top.name)} showing the strongest segment momentum`:''}.`:`The uploaded file contains <strong>${monthly.length} reporting period${monthly.length===1?'':'s'}</strong>. Add an earlier period to enable comparative trend analysis.`;
+      const items=[];
+      if(top)items.push({title:`${esc(top.name)} leads growth`,text:`${top.dim[0].toUpperCase()+top.dim.slice(1)} revenue changed ${fmtPct(top.growth)} to ${fmtMoney(top.current)}.`,c:'High'});
+      if(risk&&risk!==top)items.push({title:`${esc(risk.name)} needs attention`,text:`Revenue changed ${fmtPct(risk.growth)}; investigate volume, conversion, and mix.`,c:'Medium'});
+      if(Number.isFinite(margin))items.push({title:'Margin performance is measurable',text:`The current-period weighted gross margin is ${margin.toFixed(1)}%.`,c:'High'});
+      if(!items.length)items.push({title:'Revenue trend is ready',text:`The dashboard analyzed ${monthly.length} monthly period${monthly.length===1?'':'s'} from the uploaded file.`,c:'High'});
+      document.getElementById('signals').innerHTML=items.slice(0,3).map((d,i)=>`<div class="signal"><span class="signal-num">0${i+1}</span><div><strong>${d.title}</strong><p>${d.text}</p></div><span class="confidence">${d.c} confidence</span></div>`).join('');
+      document.getElementById('heroVerdict').textContent=q2.length?`${growth>=0?'Growth':'Contraction'} of ${Math.abs(growth).toFixed(1)}% with ${top?top.name+' leading':'trend drivers identified'}`:'Revenue trend loaded; comparison requires more history';
+    }
+
+    function renderExecutiveBrief(){
+      const a=analyticalSnapshot(),all=Object.entries(dimensions).flatMap(([dim,rows])=>rows.map(r=>({...r,dim,change:r.current-r.previous,growth:pct(r.current,r.previous)}))),top=[...all].sort((x,y)=>y.change-x.change)[0],risk=[...all].sort((x,y)=>x.change-y.change)[0];
+      const growthText=Number.isFinite(a.growth)?`${Math.abs(a.growth).toFixed(1)}% ${a.growth>=0?'growth':'decline'}`:'a single-period baseline';
+      const driverText=top?`${esc(top.name)} contributed the largest measured uplift`:'segment-level drivers are not available';
+      document.getElementById('briefStatement').innerHTML=`The business delivered <strong>${growthText}</strong>; ${driverText}. ${Number.isFinite(a.marginDelta)?`Margin moved ${a.marginDelta>=0?'+':''}${a.marginDelta.toFixed(1)} points, `:''}${risk&&risk.change<0?`while ${esc(risk.name)} is the clearest performance gap.`:'with no material segment contraction in the selected view.'}`;
+      const metrics=[{label:'Revenue change',value:Number.isFinite(a.growth)?fmtPct(a.growth):'—'},{label:'Margin movement',value:Number.isFinite(a.marginDelta)?`${a.marginDelta>=0?'+':''}${a.marginDelta.toFixed(1)}pp`:'—'},{label:'Demand movement',value:Number.isFinite(a.ordersGrowth)?fmtPct(a.ordersGrowth):'—'}];
+      document.getElementById('briefMetrics').innerHTML=metrics.map(d=>`<div class="brief-metric"><span>${d.label}</span><strong>${d.value}</strong></div>`).join('');
+      const agenda=[];
+      if(top)agenda.push({t:`Scale ${esc(top.name)} selectively`,d:`Largest measured uplift: ${fmtMoney(Math.abs(top.change))}`});
+      if(risk&&risk.change<0)agenda.push({t:`Turn around ${esc(risk.name)}`,d:`Revenue gap: ${fmtMoney(Math.abs(risk.change))}`});
+      agenda.push({t:a.hasOrders?'Improve the weaker revenue lever':'Close the volume-data gap',d:a.hasOrders?`${volumeLabel==='Units'?'Unit':'Order'} growth ${fmtPct(a.ordersGrowth)} vs. value ${fmtPct(a.aovGrowth)}`:'Required for volume vs. value decomposition'});
+      document.getElementById('managementAgenda').innerHTML=agenda.slice(0,3).map(d=>`<li><strong>${d.t}</strong><span>${d.d}</span></li>`).join('');
+      const marginState=!Number.isFinite(a.marginDelta)?'Not measured':a.marginDelta>=0?'Improving':'Compressing',demandState=!Number.isFinite(a.ordersGrowth)?'Not measured':a.ordersGrowth>=0?'Expanding':'Contracting',momentumState=!Number.isFinite(a.momentum)?'Limited history':a.momentum>=0?'Positive':'Weakening';
+      const branches=[{title:'Performance trajectory',tag:momentumState,copy:'Is the topline direction sustained and broad enough to support the operating plan?',facts:[['Period growth',Number.isFinite(a.growth)?fmtPct(a.growth):'—'],['Recent momentum',Number.isFinite(a.momentum)?fmtPct(a.momentum):'—']]},{title:'Unit economics',tag:marginState,copy:'Are revenue gains translating into healthier transaction value and gross margin?',facts:[['Margin',Number.isFinite(a.currMargin)?a.currMargin.toFixed(1)+'%':'—'],['Value / transaction',Number.isFinite(a.aovGrowth)?fmtPct(a.aovGrowth):'—']]},{title:'Execution resilience',tag:demandState,copy:'Is growth diversified, operationally supportable, and resilient to a segment slowdown?',facts:[['Demand',Number.isFinite(a.ordersGrowth)?fmtPct(a.ordersGrowth):'—'],['Volatility',a.volatility.toFixed(1)+'pp']] }];
+      document.getElementById('issueTree').innerHTML=branches.map(b=>`<section class="issue-branch"><header><h3>${b.title}</h3><span>${b.tag}</span></header><p>${b.copy}</p><div class="issue-evidence">${b.facts.map(f=>`<div><span>${f[0]}</span><strong>${f[1]}</strong></div>`).join('')}</div></section>`).join('');
+      document.getElementById('executiveTakeaway').textContent=Number.isFinite(a.growth)&&a.growth>0&&Number.isFinite(a.marginDelta)&&a.marginDelta>=0?'Growth quality is currently favorable because revenue, demand, and margin are moving in the same direction. Management should focus on repeatability and concentration risk rather than broad cost action.':'Performance is mixed. Management should diagnose the weakest revenue lever and segment before committing incremental spend.';
+    }
+    function renderOutlook(){
+      const a=analyticalSnapshot(),base=q3Revenue||total(monthly.slice(-3)),growth=Number.isFinite(a.growth)?a.growth:0,downRate=Math.min(-3,growth-5),upRate=Math.max(5,growth+5),scenarios=[{name:'Downside',rate:downRate,detail:'Demand softens and weaker segments persist'},{name:'Base sensitivity',rate:growth,detail:'Latest period growth rate repeats'},{name:'Upside',rate:upRate,detail:'Top drivers scale without margin dilution'}].map(s=>({...s,value:base*(1+s.rate/100)}));
+      document.getElementById('scenarioStrip').innerHTML=scenarios.map((s,i)=>`<div class="scenario ${i===1?'active':''}"><span>${s.name} · ${fmtPct(s.rate)}</span><strong>${fmtMoney(s.value)}</strong><small>${s.detail}</small></div>`).join('');
+      const svg=document.getElementById('outlookChart');svg.innerHTML='';const W=760,H=280,p={l:70,r:30,t:18,b:44},max=Math.max(...scenarios.map(s=>s.value))*1.15,min=Math.min(...scenarios.map(s=>s.value),0),barW=120,gap=(W-p.l-p.r)/3;
+      [0,.5,1].forEach(t=>{const val=min+(max-min)*(1-t),y=p.t+t*(H-p.t-p.b);make('line',{x1:p.l,y1:y,x2:W-p.r,y2:y,stroke:css('--line'),'stroke-width':1},svg);const tx=make('text',{x:p.l-10,y:y+4,'text-anchor':'end',fill:css('--muted'),'font-size':11},svg);tx.textContent=fmtMoney(val)});
+      scenarios.forEach((s,i)=>{const x=p.l+i*gap+gap/2,y=p.t+(max-s.value)/(max-min)*(H-p.t-p.b),h=H-p.b-y;make('rect',{x:x-barW/2,y,width:barW,height:h,rx:7,fill:i===1?css('--accent'):i===0?css('--orange'):css('--blue'),'fill-opacity':i===1?1:.78},svg);const val=make('text',{x,y:y-8,'text-anchor':'middle',fill:css('--text'),'font-size':12,'font-weight':600},svg);val.textContent=fmtMoney(s.value);const lab=make('text',{x,y:H-17,'text-anchor':'middle',fill:css('--muted'),'font-size':11},svg);lab.textContent=s.name});
+      const onePct=base*.01,marginImpact=Number.isFinite(a.currMargin)?base*(a.currMargin/100)*.01:null,levers=[{name:'Revenue growth ±1%',value:`±${fmtMoney(onePct)}`,width:100},{name:`${volumeLabel==='Units'?'Units':'Orders'} ±1%`,value:`≈ ±${fmtMoney(onePct)}`,width:82},{name:`Value per ${volumeLabel==='Units'?'unit':'order'} ±1%`,value:`≈ ±${fmtMoney(onePct)}`,width:82},{name:'Gross margin ±1pt',value:marginImpact===null?'Needs margin data':`≈ ±${fmtMoney(base*.01)}`,width:66}];
+      document.getElementById('sensitivityList').innerHTML=levers.map(l=>`<div class="sensitivity-row"><span>${l.name}</span><strong>${l.value}</strong><div class="meter"><i style="width:${l.width}%"></i></div></div>`).join('');
+      const roadmap=[{step:'DAYS 0–30',title:'Validate the diagnosis',copy:'Reconcile the top growth driver and weakest segment against pricing, campaigns, availability, and sales capacity.'},{step:'DAYS 31–60',title:'Run controlled tests',copy:'Test one demand lever and one value/mix lever with a defined owner, baseline, guardrail, and stop condition.'},{step:'DAYS 61–90',title:'Scale what survives',copy:'Expand only the intervention that produces incremental revenue without material margin or concentration deterioration.'}];
+      document.getElementById('decisionRoadmap').innerHTML=roadmap.map(r=>`<article><small>${r.step}</small><h3>${r.title}</h3><p>${r.copy}</p></article>`).join('');
+    }
+    function analyticalSnapshot(){
+      const growth=q2.length?pct(q3Revenue,q2Revenue):null;
+      const prevOrders=sum(q2,'orders'),currOrders=sum(q3,'orders');
+      const hasOrders=q2.length&&q2.some(r=>Number.isFinite(r.orders))&&q3.some(r=>Number.isFinite(r.orders))&&prevOrders>0;
+      const prevMargin=weighted(q2,'margin','revenue'),currMargin=weighted(q3,'margin','revenue');
+      const prevAov=hasOrders?q2Revenue*1000000/prevOrders:null,currAov=hasOrders?q3Revenue*1000000/currOrders:null;
+      const monthlyGrowth=[];for(let i=1;i<monthly.length;i++)if(monthly[i-1].revenue)monthlyGrowth.push(pct(monthly[i].revenue,monthly[i-1].revenue));
+      const avg=monthlyGrowth.length?monthlyGrowth.reduce((s,n)=>s+n,0)/monthlyGrowth.length:0;
+      const volatility=monthlyGrowth.length>1?Math.sqrt(monthlyGrowth.reduce((s,n)=>s+Math.pow(n-avg,2),0)/monthlyGrowth.length):0;
+      const priorWindow=monthly.slice(Math.max(0,monthly.length-4),Math.max(0,monthly.length-1));
+      const priorPace=priorWindow.length?total(priorWindow)/priorWindow.length:null;
+      const latest=monthly[monthly.length-1]?.revenue??null;
+      const momentum=Number.isFinite(priorPace)&&priorPace?pct(latest,priorPace):null;
+      return {growth,prevOrders,currOrders,hasOrders,ordersGrowth:hasOrders?pct(currOrders,prevOrders):null,prevMargin,currMargin,marginDelta:Number.isFinite(prevMargin)&&Number.isFinite(currMargin)?currMargin-prevMargin:null,prevAov,currAov,aovGrowth:Number.isFinite(prevAov)&&Number.isFinite(currAov)?pct(currAov,prevAov):null,volatility,momentum,latest};
+    }
+    function stateFor(value,medium,high,inverse=false){if(!Number.isFinite(value))return {label:'Limited',cls:'medium'};const score=inverse?-value:value;if(score>=high)return {label:'High',cls:'high'};if(score>=medium)return {label:'Moderate',cls:'medium'};return {label:'Low',cls:'low'}}
+    function renderDecisionIntelligence(){
+      const a=analyticalSnapshot(),delta=q3Revenue-q2Revenue;
+      document.getElementById('bridgeSubtitle').textContent=comparisonLabel;
+      let bridgeSteps=[],explain='';
+      if(q2.length&&a.hasOrders){
+        const volumeEffect=(a.currOrders-a.prevOrders)*a.prevAov/1000000,valueEffect=delta-volumeEffect;
+        bridgeSteps=[{label:'Previous period',value:q2Revenue,cls:''},{label:'Volume effect',value:volumeEffect,cls:volumeEffect>=0?'effect-positive':'effect-negative'},{label:'Value / mix effect',value:valueEffect,cls:valueEffect>=0?'effect-positive':'effect-negative'},{label:'Current period',value:q3Revenue,cls:''}];
+        const primary=Math.abs(volumeEffect)>=Math.abs(valueEffect)?'volume':'value / mix';
+        explain=`${primary[0].toUpperCase()+primary.slice(1)} was the larger modeled driver of the ${fmtMoney(Math.abs(delta))} revenue ${delta>=0?'increase':'decrease'}. The bridge uses prior-period revenue per ${volumeLabel==='Units'?'unit':'order'} to separate activity from value/mix; it is diagnostic, not causal.`;
+      }else if(q2.length){
+        bridgeSteps=[{label:'Previous period',value:q2Revenue,cls:''},{label:'Net change',value:delta,cls:delta>=0?'effect-positive':'effect-negative'},{label:'Latest month',value:a.latest,cls:'effect-neutral'},{label:'Current period',value:q3Revenue,cls:''}];
+        explain=`Revenue changed ${fmtPct(a.growth)} across the comparison window. Add an order or quantity field to separate volume impact from price and mix impact.`;
+      }else{
+        bridgeSteps=[{label:'First month',value:monthly[0]?.revenue||0,cls:''},{label:'Latest month',value:a.latest||0,cls:'effect-neutral'},{label:'Visible total',value:q3Revenue,cls:''},{label:'Periods',display:String(monthly.length),value:0,cls:''}];
+        explain='A prior comparison window is not available. Add more monthly history to unlock change decomposition and period-over-period diagnostics.';
+      }
+      const maxBridge=Math.max(...bridgeSteps.map(d=>Math.abs(d.value||0)),.01);
+      document.getElementById('revenueBridge').innerHTML=bridgeSteps.map(d=>`<div class="bridge-step ${d.cls}"><span>${d.label}</span><strong>${d.display||`${d.value<0?'−':''}${fmtMoney(Math.abs(d.value))}`}</strong><div class="bridge-bar"><i style="width:${Math.max(7,Math.abs(d.value||0)/maxBridge*100)}%;${d.value<0?'background:var(--danger)':''}"></i></div></div>`).join('');
+      document.getElementById('bridgeExplain').textContent=explain;
+
+      const checks=[
+        {label:'Revenue direction',value:a.growth===null?12.5:a.growth>0?25:a.growth>-2?12.5:0,text:a.growth===null?'History needed':fmtPct(a.growth)},
+        {label:'Margin direction',value:a.marginDelta===null?12.5:a.marginDelta>=0?25:a.marginDelta>-1?12.5:0,text:a.marginDelta===null?'Not provided':`${a.marginDelta>=0?'+':''}${a.marginDelta.toFixed(1)}pp`},
+        {label:volumeLabel==='Units'?'Unit demand':'Order demand',value:a.ordersGrowth===null?12.5:a.ordersGrowth>=0?25:a.ordersGrowth>-3?12.5:0,text:a.ordersGrowth===null?'Not provided':fmtPct(a.ordersGrowth)},
+        {label:'Recent momentum',value:a.momentum===null?12.5:a.momentum>=0?25:a.momentum>-3?12.5:0,text:a.momentum===null?'History needed':fmtPct(a.momentum)}
+      ];
+      const score=Math.round(checks.reduce((s,d)=>s+d.value,0)),label=score>=75?'Healthy and broad-based':score>=50?'Mixed, with manageable pressure':'Fragile; intervention warranted';
+      document.getElementById('healthScore').textContent=score;document.getElementById('healthLabel').textContent=label;document.getElementById('scoreRing').style.background=`conic-gradient(var(--accent) 0 ${score}%,var(--panel-2) ${score}% 100%)`;
+      document.getElementById('healthCopy').textContent='A transparent directional score, not a forecast. Each check contributes 25 points.';
+      document.getElementById('scoreChecks').innerHTML=checks.map(d=>`<div class="score-check"><span>${d.label}</span><strong class="${d.value===25?'good':d.value===0?'risk':'watch'}">${d.text}</strong></div>`).join('');
+
+      const all=Object.entries(dimensions).flatMap(([dim,rows])=>rows.map(r=>({...r,dim,growth:pct(r.current,r.previous),change:r.current-r.previous}))),top=[...all].sort((x,y)=>y.change-x.change)[0],risk=[...all].sort((x,y)=>x.change-y.change)[0];
+      const actions=[];
+      if(Number.isFinite(a.growth)&&a.growth<0)actions.push({title:'Stabilize the revenue base',text:`Revenue is down ${Math.abs(a.growth).toFixed(1)}%. Separate demand loss from value/mix before changing price or spend.`,tag:'Immediate'});else if(top)actions.push({title:`Protect and replicate ${esc(top.name)}`,text:`This ${top.dim} delivered the largest measured revenue lift (${fmtMoney(Math.abs(top.change))}). Validate capacity, acquisition cost, and repeatability before scaling.`,tag:'High impact'});
+      if(risk&&risk.change<0)actions.push({title:`Run a root-cause sprint on ${esc(risk.name)}`,text:`The segment lost ${fmtMoney(Math.abs(risk.change))}. Test volume, conversion, discounting, availability, and channel mix in that order.`,tag:'Immediate'});else if(Number.isFinite(a.marginDelta)&&a.marginDelta<0)actions.push({title:'Recover margin without blunt discount cuts',text:`Weighted gross margin moved ${a.marginDelta.toFixed(1)}pp. Inspect product and channel mix before changing list price.`,tag:'Margin'});else actions.push({title:'Convert momentum into a repeatable operating plan',text:`Recent monthly momentum is ${a.momentum===null?'not yet measurable':fmtPct(a.momentum)} versus the preceding monthly pace. Lock owners and capacity limits around the strongest driver.`,tag:'Next cycle'});
+      if(a.hasOrders&&Number.isFinite(a.aovGrowth))actions.push({title:a.ordersGrowth>=a.aovGrowth?'Lift value per transaction':'Protect demand while value improves',text:`${volumeLabel==='Units'?'Unit':'Order'} growth is ${fmtPct(a.ordersGrowth)} while value per ${volumeLabel==='Units'?'unit':'order'} is ${fmtPct(a.aovGrowth)}. Focus the next test on the weaker lever.`,tag:'Test'});else actions.push({title:'Add volume to the measurement layer',text:'Include order count or quantity so future readouts can distinguish activity growth from pricing and product mix.',tag:'Data'});
+      document.getElementById('actionList').innerHTML=actions.slice(0,3).map((d,i)=>`<div class="action-item"><span class="action-rank">0${i+1}</span><div><h3>${d.title}</h3><p>${d.text}</p></div><span class="impact-tag">${d.tag}</span></div>`).join('');
+
+      const firstDim=Object.keys(dimensions).find(k=>dimensions[k]?.length),rows=firstDim?dimensions[firstDim]:[],dimTotal=rows.reduce((s,r)=>s+r.current,0),topShare=dimTotal?Math.max(...rows.map(r=>r.current))/dimTotal*100:null,positive=rows.filter(r=>r.current-r.previous>0),positiveDelta=positive.reduce((s,r)=>s+r.current-r.previous,0),dependency=positiveDelta?Math.max(...positive.map(r=>r.current-r.previous))/positiveDelta*100:null;
+      const concentration=stateFor(topShare,35,50),stability=stateFor(a.volatility,8,15),marginRisk=Number.isFinite(a.marginDelta)?stateFor(-a.marginDelta,.01,1):{label:'Limited',cls:'medium'},dependencyRisk=stateFor(dependency,50,70);
+      const risks=[{name:'Segment concentration',detail:Number.isFinite(topShare)?`Largest ${firstDim} is ${topShare.toFixed(1)}% of current revenue`:'No segment dimension available',state:concentration},{name:'Monthly volatility',detail:`Month-to-month growth variability is ${a.volatility.toFixed(1)}pp`,state:stability},{name:'Margin pressure',detail:Number.isFinite(a.marginDelta)?`Weighted margin changed ${a.marginDelta>=0?'+':''}${a.marginDelta.toFixed(1)}pp`:'Gross margin is not available',state:marginRisk},{name:'Growth dependency',detail:Number.isFinite(dependency)?`Top contributor supplies ${dependency.toFixed(1)}% of positive segment gains`:'Insufficient positive segment change',state:dependencyRisk}];
+      document.getElementById('riskList').innerHTML=risks.map(r=>`<div class="risk-row"><div><strong>${r.name}</strong><p>${r.detail}</p></div><span class="risk-state ${r.state.cls}">${r.state.label}</span></div>`).join('');
+    }
+    function renderDriverDetail(dim){
+      const rows=dimensions[dim]||[],table=document.getElementById('driverTableRows'),metrics=document.getElementById('portfolioMetrics');
+      if(!rows.length){table.innerHTML='<tr><td colspan="7">No segment data is available for this dimension.</td></tr>';metrics.innerHTML='<div class="empty-chart">Upload a region, channel, or category field to unlock portfolio diagnostics.</div>';document.getElementById('portfolioSubtitle').textContent='No segment dimension available';return}
+      const current=rows.reduce((s,r)=>s+r.current,0),previous=rows.reduce((s,r)=>s+r.previous,0),net=current-previous,weightedMargin=rows.reduce((s,r)=>s+(Number.isFinite(r.margin)?r.margin*r.current:0),0)/(rows.reduce((s,r)=>s+(Number.isFinite(r.margin)?r.current:0),0)||1);
+      const sorted=[...rows].sort((a,b)=>Math.abs(b.current-b.previous)-Math.abs(a.current-a.previous));
+      table.innerHTML=sorted.map(r=>{const change=r.current-r.previous,growth=pct(r.current,r.previous),mix=current?r.current/current*100:0,contribution=Math.abs(net)>.000001?change/net*100:null;let posture='Maintain';if(r.previous===0&&r.current>0)posture='Validate new';else if(growth<0)posture='Diagnose';else if(Number.isFinite(r.margin)&&r.margin<weightedMargin&&growth>0)posture='Protect margin';else if(growth>=pct(current,previous)+3)posture='Scale selectively';return `<tr><td><strong>${esc(r.name)}</strong></td><td>${fmtMoney(r.current)}</td><td>${mix.toFixed(1)}%</td><td class="${growth<0?'negative':'positive'}">${fmtPct(growth)}</td><td class="${change<0?'negative':'positive'}">${change<0?'−':''}${fmtMoney(Math.abs(change))}${Number.isFinite(contribution)?` <small>(${contribution>=0?'+':''}${contribution.toFixed(0)}%)</small>`:''}</td><td>${Number.isFinite(r.margin)?r.margin.toFixed(1)+'%':'—'}</td><td><span class="recommendation">${posture}</span></td></tr>`}).join('');
+      const shares=rows.map(r=>current?r.current/current:0),hhi=shares.reduce((s,n)=>s+n*n,0)*10000,decliners=rows.filter(r=>r.current<r.previous),top=[...rows].sort((a,b)=>b.current-a.current)[0],largestMove=sorted[0];
+      document.getElementById('portfolioSubtitle').textContent=`${dim[0].toUpperCase()+dim.slice(1)} portfolio · ${rows.length} segments`;
+      metrics.innerHTML=`<div class="portfolio-metric"><span>Largest segment</span><strong>${esc(top.name)} · ${(top.current/current*100).toFixed(1)}%</strong><small>Share of current-period revenue</small></div><div class="portfolio-metric"><span>Concentration index</span><strong>${hhi.toFixed(0)}</strong><small>HHI; below 1,500 is typically diversified</small></div><div class="portfolio-metric"><span>Declining segments</span><strong>${decliners.length} of ${rows.length}</strong><small>${decliners.length?decliners.map(r=>esc(r.name)).slice(0,2).join(', '):'No segments declined'}</small></div><div class="portfolio-metric"><span>Largest swing</span><strong>${esc(largestMove.name)}</strong><small>${largestMove.current-largestMove.previous>=0?'+':'−'}${fmtMoney(Math.abs(largestMove.current-largestMove.previous))} period over period</small></div>`;
+    }
+    function renderQuality(){
+      const marginCoverage=monthly.length?monthly.filter(r=>Number.isFinite(r.margin)).length/monthly.length*100:0,volumeCoverage=monthly.length?monthly.filter(r=>Number.isFinite(r.orders)).length/monthly.length*100:0,dimensionCount=Object.keys(dimensions).filter(k=>dimensions[k]?.length).length;
+      const items=[{label:'Time coverage',value:`${monthly.length} month${monthly.length===1?'':'s'}`,note:q2.length?'Comparative analysis enabled':'More history recommended'},{label:'Margin coverage',value:`${marginCoverage.toFixed(0)}%`,note:marginCoverage===100?'Complete across periods':'Some margin insights are limited'},{label:'Volume coverage',value:`${volumeCoverage.toFixed(0)}%`,note:volumeCoverage===100?'Bridge decomposition enabled':'Add order or quantity values'},{label:'Segment dimensions',value:String(dimensionCount),note:dimensionCount?Object.keys(dimensions).filter(k=>dimensions[k]?.length).map(k=>k[0].toUpperCase()+k.slice(1)).join(', '):'Add region, channel, or category'}];
+      document.getElementById('qualityGrid').innerHTML=items.map(d=>`<div class="quality-item"><span>${d.label}</span><strong>${d.value}</strong><small>${d.note}</small></div>`).join('');
+    }
+    function renderRanking(dim){
+      const available=Object.keys(dimensions).filter(k=>dimensions[k]&&dimensions[k].length);
+      dim=available.includes(dim)?dim:available[0];
+      const picker=document.getElementById('dimensionPicker');
+      picker.querySelectorAll('button').forEach(b=>{b.hidden=!available.includes(b.dataset.dim);b.classList.toggle('active',b.dataset.dim===dim)});
+      if(!dim){document.getElementById('ranking').innerHTML='<div class="empty-chart">No region, channel, or category column was found in this file.</div>';document.getElementById('driverStories').innerHTML='';renderDriverDetail();return}
+      const rows=dimensions[dim];const max=Math.max(...rows.flatMap(d=>[d.current,d.previous]),.01);
+      document.getElementById('ranking').innerHTML=rows.map(d=>{
+        const growth=pct(d.current,d.previous);
+        return `<div class="rank-row"><div class="rank-name"><strong>${esc(d.name)}</strong><span>${Number.isFinite(d.margin)?'Gross margin '+d.margin.toFixed(1)+'%':'Margin not provided'}</span></div><div class="bar-track" aria-label="${esc(d.name)}: ${fmtMoney(d.current)} this period, ${fmtMoney(d.previous)} previous period"><span class="bar-prev" style="width:${d.previous/max*100}%"></span><span class="bar-current" style="width:${d.current/max*100}%"></span></div><div class="rank-value"><strong>${fmtMoney(d.current)}</strong><span class="${growth<0?'negative':''}">${fmtPct(growth)}</span></div></div>`;
+      }).join('');
+      const top=[...rows].sort((a,b)=>pct(b.current,b.previous)-pct(a.current,a.previous))[0];
+      const risk=[...rows].sort((a,b)=>pct(a.current,a.previous)-pct(b.current,b.previous))[0];
+      const label=dim[0].toUpperCase()+dim.slice(1),topGrowth=fmtPct(pct(top.current,top.previous)),riskGrowth=fmtPct(pct(risk.current,risk.previous));
+      document.getElementById('driverStories').innerHTML=`<article><small>${label} opportunity</small><h3>Invest further in ${esc(top.name)}</h3><p>${esc(top.name)} changed ${topGrowth}, the strongest momentum in this view. Validate capacity and acquisition economics before scaling.</p></article><article><small>${label} risk</small><h3>Diagnose ${esc(risk.name)}</h3><p>${esc(risk.name)} changed ${riskGrowth}. Break down volume, conversion, price, and mix to isolate the cause.</p></article>`;
+      renderDriverDetail(dim);
+    }
+
+    function renderData(){
+      document.getElementById('dataRows').innerHTML=monthly.map(d=>`<tr><td>${d.month}</td><td>${fmtMoney(d.revenue)}</td><td>${Number.isFinite(d.orders)?d.orders.toLocaleString('en-CA'):'—'}</td><td>${Number.isFinite(d.margin)?d.margin.toFixed(1)+'%':'—'}</td><td>${Number.isFinite(d.aov)?'$'+d.aov.toFixed(2):'—'}</td></tr>`).join('');
+    }
+    function csvContent(){
+      const lines=['month,revenue_m_cad,orders,gross_margin_pct,aov_cad'];
+      monthly.forEach(d=>lines.push([d.month,d.revenue,d.orders,d.margin,d.aov].join(',')));
+      Object.entries(dimensions).forEach(([dim,rows])=>{lines.push('');lines.push(`dimension,segment,current_revenue_m_cad,previous_revenue_m_cad,gross_margin_pct`);rows.forEach(d=>lines.push([dim,d.name,d.current,d.previous,d.margin].join(',')))});
+      return '\uFEFF'+lines.join('\n');
+    }
+    function downloadCsv(){
+      const content=uploadedText||csvContent();const blob=new Blob([content],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=uploadedText?sourceName:'northstar-retail-sample-2026-q3.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast(uploadedText?'Uploaded CSV downloaded':'Sample CSV downloaded');
+    }
+    function downloadTemplate(){
+      const headers='Order_ID,Order_Date,City,Province,Sales_Channel,Sales_Rep,Product,Category,Quantity,Unit_Price_CAD,Discount_Pct,Revenue_CAD,Cost_CAD,Profit_CAD,Payment_Method';
+      const blob=new Blob(['\uFEFF'+headers+'\n'],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='business-insights-upload-template.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast('Empty CSV template downloaded');
+    }
+    const esc=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+    function parseCsv(text){
+      text=String(text??'').replace(/^\uFEFF/,'');
+      const rows=[];let row=[],field='',quoted=false;
+      for(let i=0;i<text.length;i++){const ch=text[i];if(quoted){if(ch==='"'&&text[i+1]==='"'){field+='"';i++}else if(ch==='"')quoted=false;else field+=ch}else if(ch==='"')quoted=true;else if(ch===','){row.push(field);field=''}else if(ch==='\n'){row.push(field);if(row.some(v=>v.trim()))rows.push(row);row=[];field=''}else if(ch!=='\r')field+=ch}
+      row.push(field);if(row.some(v=>v.trim()))rows.push(row);
+      if(rows.length<2)throw new Error('The CSV needs a header row and at least one data row.');
+      const normalizeHeader=h=>String(h??'').replace(/^\uFEFF/,'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
+      const rawHeaders=rows.shift().map(h=>String(h??'').replace(/^\uFEFF/,'').trim());
+      const headers=rawHeaders.map(normalizeHeader);
+      const find=aliases=>{
+        const clean=aliases.map(normalizeHeader);
+        for(const alias of clean){const exact=headers.indexOf(alias);if(exact>=0)return exact}
+        for(const alias of clean){if(alias.length<5)continue;const fuzzy=headers.findIndex(h=>h.startsWith(alias+' ')||h.endsWith(' '+alias)||h.includes(' '+alias+' '));if(fuzzy>=0)return fuzzy}
+        return -1;
+      };
+      const dateIdx=find(['order date','transaction date','sale date','reporting month','month','date','period']);
+      const revIdx=find(['revenue cad','net revenue cad','net revenue','sales revenue','revenue','net sales','total sales','sales','amount']);
+      const missing=[];
+      if(dateIdx<0)missing.push('date/month (for example Order_Date, Date, or Month)');
+      if(revIdx<0)missing.push('revenue/sales (for example Revenue_CAD, Revenue, or Net_Sales)');
+      if(missing.length)throw new Error(`Missing required column${missing.length>1?'s':''}: ${missing.join('; ')}.`);
+      const orderIdx=find(['order count','number of orders','orders','transactions']);
+      const quantityIdx=find(['quantity sold','units sold','unit quantity','quantity','qty','units']);
+      const orderIdIdx=find(['order id','transaction id','invoice id']);
+      const marginIdx=find(['gross margin pct','gross margin percent','gross margin','margin pct','margin percent','margin']);
+      const profitIdx=find(['profit cad','gross profit cad','gross profit','profit']);
+      const costIdx=find(['cost cad','total cost cad','cost of goods sold','cogs','total cost','cost']);
+      const aovIdx=find(['average order value','avg order value','aov']);
+      const regionIdx=find(['sales region','region','market','territory']);
+      const cityIdx=find(['city','municipality']);
+      const provinceIdx=find(['province','state province','state']);
+      const channelIdx=find(['sales channel','channel']);
+      const categoryIdx=find(['product category','category']);
+      const revHeader=headers[revIdx],isMillions=/\bm\b|million/.test(revHeader);
+      const num=v=>{const s=String(v??'').trim();if(!s)return null;const neg=/^\(.*\)$/.test(s);const n=Number(s.replace(/[$,%()\s]/g,''));return Number.isFinite(n)?(neg?-n:n):null};
+      const slashDates=rows.map(r=>String(r[dateIdx]??'').trim()).map(s=>s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/)).filter(Boolean);
+      let dmyEvidence=0,mdyEvidence=0;slashDates.forEach(m=>{if(+m[1]>12&&+m[2]<=12)dmyEvidence++;if(+m[2]>12&&+m[1]<=12)mdyEvidence++});
+      const slashOrder=mdyEvidence>dmyEvidence?'mdy':'dmy';
+      const validDate=(year,month,day)=>{if(month<1||month>12||day<1)return false;return day<=new Date(Date.UTC(year,month,0)).getUTCDate()};
+      const month=v=>{
+        const s=String(v??'').trim();let m=s.match(/^(\d{4})[-\/](\d{1,2})(?:[-\/](\d{1,2}))?$/);
+        if(m){const year=+m[1],mo=+m[2],day=m[3]?+m[3]:1;return validDate(year,mo,day)?`${year}-${String(mo).padStart(2,'0')}`:null}
+        m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+        if(m){const first=+m[1],second=+m[2],year=+m[3];let mo,day;if(first>12){day=first;mo=second}else if(second>12){mo=first;day=second}else if(slashOrder==='mdy'){mo=first;day=second}else{day=first;mo=second}return validDate(year,mo,day)?`${year}-${String(mo).padStart(2,'0')}`:null}
+        return null;
+      };
+      const parsed=[];let invalidDateRows=0,invalidRevenueRows=0;
+      rows.forEach((r,rowNumber)=>{
+        const mon=month(r[dateIdx]),rawRevenue=num(r[revIdx]);
+        if(!mon){invalidDateRows++;return}if(rawRevenue===null){invalidRevenueRows++;return}
+        let margin=num(r[marginIdx]),profit=num(r[profitIdx]),cost=num(r[costIdx]);
+        if(margin!==null&&Math.abs(margin)<=1)margin*=100;
+        if(margin===null&&rawRevenue!==0&&profit!==null)margin=profit/rawRevenue*100;
+        if(margin===null&&rawRevenue!==0&&cost!==null)margin=(rawRevenue-cost)/rawRevenue*100;
+        const city=cityIdx>=0?String(r[cityIdx]??'').trim():'',province=provinceIdx>=0?String(r[provinceIdx]??'').trim():'';
+        const region=regionIdx>=0?String(r[regionIdx]??'').trim():[city,province].filter(Boolean).join(', ');
+        const volume=orderIdx>=0?num(r[orderIdx]):quantityIdx>=0?num(r[quantityIdx]):orderIdIdx>=0?1:null;
+        const rec={month:mon,revenue:isMillions?rawRevenue:rawRevenue/1000000,orders:volume,margin,aov:num(r[aovIdx]),orderId:orderIdIdx>=0?String(r[orderIdIdx]??'').trim():'',dims:{}};
+        if(region)rec.dims.region=region;
+        if(channelIdx>=0&&String(r[channelIdx]??'').trim())rec.dims.channel=String(r[channelIdx]).trim();
+        if(categoryIdx>=0&&String(r[categoryIdx]??'').trim())rec.dims.category=String(r[categoryIdx]).trim();
+        parsed.push(rec);
+      });
+      if(!parsed.length){const details=[];if(invalidDateRows)details.push(`${invalidDateRows} row${invalidDateRows===1?' has':'s have'} an unsupported date`);if(invalidRevenueRows)details.push(`${invalidRevenueRows} row${invalidRevenueRows===1?' has':'s have'} an invalid revenue value`);throw new Error(`No valid data rows were found${details.length?`: ${details.join(' and ')}`:''}. Supported dates are DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD, and YYYY-MM.`)}
+      const grouped={};parsed.forEach(r=>{const g=grouped[r.month]||(grouped[r.month]={month:r.month,revenue:0,orders:(orderIdx>=0||quantityIdx>=0||orderIdIdx>=0)?0:null,orderIds:new Set(),marginNum:0,marginDen:0,aovNum:0,aovDen:0});g.revenue+=r.revenue;if(orderIdIdx>=0&&orderIdx<0&&quantityIdx<0){if(r.orderId)g.orderIds.add(r.orderId)}else if(Number.isFinite(r.orders))g.orders+=r.orders;if(Number.isFinite(r.margin)){g.marginNum+=r.margin*Math.abs(r.revenue);g.marginDen+=Math.abs(r.revenue)}if(Number.isFinite(r.aov)){g.aovNum+=r.aov*Math.abs(r.revenue);g.aovDen+=Math.abs(r.revenue)}});
+      const outMonthly=Object.values(grouped).sort((a,b)=>a.month.localeCompare(b.month)).map(g=>{if(orderIdIdx>=0&&orderIdx<0&&quantityIdx<0)g.orders=g.orderIds.size;return {month:g.month,revenue:g.revenue,orders:g.orders,margin:g.marginDen?g.marginNum/g.marginDen:null,aov:g.aovDen?g.aovNum/g.aovDen:(g.orders?g.revenue*1000000/g.orders:null)}});
+      const split=outMonthly.length>=6?outMonthly.length-3:Math.max(1,Math.floor(outMonthly.length/2)),prevMonths=new Set(outMonthly.slice(Math.max(0,split-3),split).map(r=>r.month)),currMonths=new Set(outMonthly.slice(split).map(r=>r.month));
+      if(!currMonths.size)outMonthly.forEach(r=>currMonths.add(r.month));
+      const outDims={};['region','channel','category'].forEach(dim=>{if(!parsed.some(r=>r.dims[dim]))return;const groups={};parsed.forEach(r=>{const name=r.dims[dim];if(!name)return;const g=groups[name]||(groups[name]={name,current:0,previous:0,marginNum:0,marginDen:0});if(currMonths.has(r.month)){g.current+=r.revenue;if(Number.isFinite(r.margin)){g.marginNum+=r.margin*Math.abs(r.revenue);g.marginDen+=Math.abs(r.revenue)}}else if(prevMonths.has(r.month))g.previous+=r.revenue});outDims[dim]=Object.values(groups).map(g=>({name:g.name,current:g.current,previous:g.previous,margin:g.marginDen?g.marginNum/g.marginDen:null})).sort((a,b)=>b.current-a.current)});
+      return {monthly:outMonthly,dimensions:outDims,validRows:parsed.length,skippedRows:rows.length-parsed.length,dateOrder:slashOrder.toUpperCase(),volumeLabel:quantityIdx>=0&&orderIdx<0?'Units':'Orders'};
+    }
+    function showImportError(message){const status=document.getElementById('sourceStatus');status.textContent=`CSV import failed: ${message}`;status.classList.add('visible','error');showToast('CSV import failed — see details above')}
+    function activateCsv(text,name){
+      const result=parseCsv(text);monthly=result.monthly;dimensions=result.dimensions;volumeLabel=result.volumeLabel;sourceName=name;uploadedText=text;renderAll();document.getElementById('datasetTag').textContent='Uploaded dataset';document.getElementById('scopeTitle').textContent=name;document.getElementById('scopePeriod').textContent=comparisonLabel;document.getElementById('resetData').classList.add('visible');const status=document.getElementById('sourceStatus');status.classList.remove('error');status.innerHTML=`Analyzing <strong>${esc(name)}</strong> · ${result.validRows.toLocaleString('en-CA')} valid rows · ${monthly.length} monthly periods${result.skippedRows?` · ${result.skippedRows} skipped`:''}`;status.classList.add('visible');document.getElementById('dataTitle').textContent='Uploaded data preview';document.getElementById('dataSubtitle').textContent=`${name} · order rows aggregated into a monthly view`;document.getElementById('downloadLabel').textContent='Download uploaded CSV';showToast('CSV analyzed successfully');
+    }
+    function applyFile(file){
+      if(!file||!file.name.toLowerCase().endsWith('.csv')){showImportError('Please choose a file with a .csv extension.');return}
+      const reader=new FileReader();reader.onload=()=>{try{activateCsv(reader.result,file.name)}catch(err){showImportError(err.message)}};reader.onerror=()=>showImportError('The selected file could not be read.');reader.readAsText(file,'UTF-8');
+    }
+    function tryExample(){
+      const text='\uFEFFOrder_ID,Order_Date,City,Province,Sales_Channel,Sales_Rep,Product,Category,Quantity,Unit_Price_CAD,Discount_Pct,Revenue_CAD,Cost_CAD,Profit_CAD,Payment_Method\nORD-00001,15/01/2026,Vancouver,BC,Retail,Rep-08,Smart Watch,Electronics,2,249,0,498,246.42,251.58,Credit Card\nORD-00002,08/02/2026,Markham,ON,Online,Rep-08,USB-C Cable,Accessories,3,15.99,0.1,43.17,26.35,16.82,Credit Card\nORD-00003,21/03/2026,Calgary,AB,B2B,Rep-04,Wireless Earbuds,Electronics,1,129,0,129,76,53,E-Transfer\nORD-00004,24/04/2026,Calgary,AB,Retail,Rep-02,Smart Watch,Electronics,1,249,0.15,211.65,130.45,81.2,Debit Card\nORD-00005,30/05/2026,Markham,ON,B2B,Rep-04,Wireless Earbuds,Electronics,2,129,0,258,151,107,E-Transfer\nORD-00006,25/06/2026,Richmond Hill,ON,Online,Rep-12,Smart Watch,Electronics,2,249,0,498,301.33,196.67,Credit Card\nORD-00007,18/07/2026,Vancouver,BC,Online,Rep-07,Bluetooth Speaker,Electronics,1,119,0,119,77.07,41.93,Credit Card\nORD-00008,09/08/2026,Richmond Hill,ON,Retail,Rep-03,USB-C Cable,Accessories,4,15.99,0,63.96,36.1,27.86,Debit Card';
+      activateCsv(text,'order-detail-example.csv');
+    }
+    function resetSample(){monthly=sampleMonthly.map(d=>({...d}));dimensions=JSON.parse(JSON.stringify(sampleDimensions));volumeLabel='Orders';sourceName='Northstar Retail sample';uploadedText='';renderAll();document.getElementById('datasetTag').textContent='Sample dataset';document.getElementById('scopeTitle').textContent='Northstar Retail · Canada';document.getElementById('scopePeriod').textContent='Q3 2026 · vs. previous quarter';document.getElementById('resetData').classList.remove('visible');document.getElementById('sourceStatus').classList.remove('visible','error');document.getElementById('dataTitle').textContent='Sample data preview';document.getElementById('dataSubtitle').textContent='Northstar Retail aggregated operating data · Q2–Q3 2026';document.getElementById('downloadLabel').textContent='Download full CSV';showToast('Sample dataset restored')}
+    function renderMix(dim){
+      const available=Object.keys(dimensions).filter(k=>dimensions[k]&&dimensions[k].length);dim=available.includes(dim)?dim:available[0];const picker=document.getElementById('mixPicker');picker.innerHTML=available.map(k=>`<button class="${k===dim?'active':''}" data-mix="${k}">${k[0].toUpperCase()+k.slice(1)}</button>`).join('');picker.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>renderMix(b.dataset.mix)));
+      const host=document.getElementById('mixChart');if(!dim){document.getElementById('mixSubtitle').textContent='Current-period contribution';host.innerHTML='<div class="empty-chart">Add a region, channel, or category column to see the revenue mix.</div>';return}
+      document.getElementById('mixSubtitle').textContent=`Current period by ${dim}`;const rows=[...dimensions[dim]].sort((a,b)=>b.current-a.current).slice(0,5),totalNow=rows.reduce((s,r)=>s+r.current,0)||1,colors=[css('--accent'),css('--blue'),css('--lime'),css('--orange'),css('--subtle')];let cursor=0;const stops=rows.map((r,i)=>{const start=cursor;cursor+=r.current/totalNow*100;return `${colors[i]} ${start.toFixed(1)}% ${cursor.toFixed(1)}%`}).join(',');host.innerHTML=`<div class="donut-wrap"><div class="donut" style="background:conic-gradient(${stops})"></div><div class="donut-center"><strong>${fmtMoney(totalNow)}</strong><span>total revenue</span></div></div><div class="mix-legend">${rows.map((r,i)=>`<div class="mix-item"><i style="background:${colors[i]}"></i><span title="${esc(r.name)}">${esc(r.name)}</span><strong>${(r.current/totalNow*100).toFixed(1)}%</strong></div>`).join('')}</div>`;
+    }
+    function renderOps(){
+      const svg=document.getElementById('opsChart');svg.innerHTML='';const hasOrders=monthly.some(r=>Number.isFinite(r.orders)),hasMargin=monthly.some(r=>Number.isFinite(r.margin));if(!hasOrders&&!hasMargin){const note=make('text',{x:350,y:110,'text-anchor':'middle',fill:css('--muted'),'font-size':13},svg);note.textContent='Add an orders or gross margin column to visualize this profile.';return}
+      const W=700,H=220,p={l:38,r:28,t:16,b:36},maxOrders=Math.max(...monthly.map(r=>r.orders||0),1),xStep=(W-p.l-p.r)/monthly.length,barW=Math.min(48,xStep*.58);
+      [0,.5,1].forEach(t=>make('line',{x1:p.l,y1:p.t+(H-p.t-p.b)*t,x2:W-p.r,y2:p.t+(H-p.t-p.b)*t,stroke:css('--line'),'stroke-width':1},svg));
+      monthly.forEach((d,i)=>{const x=p.l+i*xStep+xStep/2;if(hasOrders&&Number.isFinite(d.orders)){const h=d.orders/maxOrders*(H-p.t-p.b);make('rect',{x:x-barW/2,y:H-p.b-h,width:barW,height:h,rx:4,fill:css('--accent'),'fill-opacity':.8},svg)}const tx=make('text',{x,y:H-14,'text-anchor':'middle',fill:css('--muted'),'font-size':10},svg);tx.textContent=d.month.slice(5)});
+      const margins=monthly.map(d=>d.margin).filter(Number.isFinite);if(margins.length){const lo=Math.min(...margins)-1,hi=Math.max(...margins)+1,y=v=>p.t+(hi-v)/(hi-lo)*(H-p.t-p.b);let path='';monthly.forEach((d,i)=>{if(!Number.isFinite(d.margin))return;const x=p.l+i*xStep+xStep/2;path+=`${path?'L':'M'} ${x} ${y(d.margin)} `});make('path',{d:path,fill:'none',stroke:css('--orange'),'stroke-width':3,'stroke-linecap':'round','stroke-linejoin':'round'},svg);monthly.forEach((d,i)=>{if(Number.isFinite(d.margin))make('circle',{cx:p.l+i*xStep+xStep/2,cy:y(d.margin),r:4,fill:css('--panel'),stroke:css('--orange'),'stroke-width':2.5},svg)})}
+    }
+    function renderAll(){updatePeriods();renderKpis();renderTrend();renderInsights();renderRanking();renderData();renderMix();renderOps();renderDecisionIntelligence();renderQuality();renderExecutiveBrief();renderOutlook();document.getElementById('volumeLegend').textContent=volumeLabel==='Units'?'Units sold':'Orders';document.getElementById('volumeHeader').textContent=volumeLabel==='Units'?'Units sold':'Orders';document.getElementById('aovHeader').textContent=volumeLabel==='Units'?'Revenue per unit':'Average order value';document.getElementById('comparisonMethod').textContent=`Comparison: ${comparisonLabel}`}
+    function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200)}
+    function switchView(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));window.scrollTo({top:0,behavior:'smooth'})}
+
+    document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
+    document.querySelectorAll('[data-view-jump]').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.viewJump)));
+    document.querySelectorAll('#dimensionPicker button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#dimensionPicker button').forEach(x=>x.classList.toggle('active',x===b));renderRanking(b.dataset.dim)}));
+    document.getElementById('rerun').addEventListener('click',e=>{const b=e.currentTarget;b.classList.add('loading');b.querySelector('.rerunText').textContent='Analyzing';document.getElementById('analysisTime').textContent='Recalculating metrics';setTimeout(()=>{renderInsights();renderDecisionIntelligence();b.classList.remove('loading');b.querySelector('.rerunText').textContent='Regenerate analysis';document.getElementById('analysisTime').textContent='Updated just now';showToast('Insights regenerated from the latest view')},750)});
+    document.getElementById('downloadCsv').addEventListener('click',downloadCsv);document.getElementById('quickDownload').addEventListener('click',downloadCsv);document.getElementById('downloadTemplate').addEventListener('click',downloadTemplate);
+    const input=document.getElementById('csvInput'),panel=document.getElementById('uploadPanel');
+    document.getElementById('topUpload').addEventListener('click',()=>input.click());document.getElementById('chooseCsv').addEventListener('click',()=>input.click());document.getElementById('resetData').addEventListener('click',resetSample);document.getElementById('tryCsv').addEventListener('click',tryExample);input.addEventListener('change',()=>{applyFile(input.files[0]);input.value='' });
+    ['dragenter','dragover'].forEach(evt=>panel.addEventListener(evt,e=>{e.preventDefault();panel.classList.add('dragging')}));['dragleave','drop'].forEach(evt=>panel.addEventListener(evt,e=>{e.preventDefault();panel.classList.remove('dragging')}));panel.addEventListener('drop',e=>applyFile(e.dataTransfer.files[0]));
+    renderAll();
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{renderTrend();renderMix();renderOps()});
+  </script>
+</body>
+</html>

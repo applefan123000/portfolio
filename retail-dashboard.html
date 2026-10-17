@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:,">
+<title>Retail Performance Dashboard — Store Diagnostics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F6F4EF; --surface:#FFFEFB; --surface2:#EFECE4; --line:#E2DDD1; --line2:#D6D0BE;
+  --ink:#182522; --ink2:#5A6B66; --ink3:#8A968F;
+  --teal:#0F766E; --teal-light:#CCEBE6; --teal-dark:#0B4F4A;
+  --amber:#B45309; --amber-bg:#FEF3C7;
+  --red:#B91C1C; --red-bg:#FEE2E2;
+  --green:#15803D; --green-bg:#DCFCE7;
+  --blue:#1D4ED8;
+  --radius:14px;
+  --shadow:0 1px 3px rgba(24,37,34,.06),0 8px 24px rgba(24,37,34,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#121716; --surface:#1C2422; --surface2:#242E2B; --line:#2E3A36; --line2:#3A4842; --ink:#E8EDEA; --ink2:#A8B8B1; --ink3:#7A8A83; --teal:#2DD4BF; --teal-light:#134E4A; --amber-bg:#451A03; --red-bg:#450A0A; --green-bg:#052E16; --shadow:0 1px 3px rgba(0,0,0,.3)}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Public Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--teal)}
+button{font:inherit;cursor:pointer}
+.mono{font-family:"IBM Plex Mono",monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 18px 36px}
+.top{ display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; justify-content:space-between; margin-bottom:18px}
+.top h1{font-family:"Libre Franklin",sans-serif;font-size:28px;line-height:1.05;letter-spacing:-.02em;margin:0;font-weight:800}
+.top h1 span{color:var(--teal)}
+.sub{color:var(--ink2);font-size:13.5px;line-height:1.5;margin-top:6px;max-width:620px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:7px 13px;border-radius:999px;font-size:13px;font-weight:600;color:var(--ink2)}
+.seg button.active{background:var(--ink);color:var(--bg)}
+.databar{margin:0 0 4px}
+.datactions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600}
+.btn:hover{border-color:var(--line2)}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+@media(prefers-color-scheme:dark){.btn.primary{color:#04201D}}
+.datastatus{font-size:13px;color:var(--ink2);margin:10px 0 0;line-height:1.5}
+.datastatus.err{color:var(--red);font-weight:600}
+.datahint{font-size:12.5px;color:var(--ink3);margin:4px 0 0;line-height:1.55}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 16px}
+.pill{border:1px solid var(--line);background:var(--surface);padding:7px 12px;border-radius:999px;font-size:13px;font-weight:600;color:var(--ink2)}
+.pill.active{background:var(--teal);border-color:var(--teal);color:white}
+@media(prefers-color-scheme:dark){.pill.active{color:#04201D}}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+@media(max-width:800px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:420px){.kpis{grid-template-columns:1fr 1fr}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px 14px;box-shadow:var(--shadow)}
+.kpi label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:700}
+.kpi .val{font-family:"Libre Franklin";font-size:28px;font-weight:800;letter-spacing:-.03em;margin:6px 0 4px}
+.kpi .delta{font-size:13px;font-weight:600}
+.up{color:var(--green)} .down{color:var(--red)} .flat{color:var(--ink2)}
+.kpi p{margin:4px 0 0;font-size:12.5px;color:var(--ink2);line-height:1.45}
+.grid2{display:grid;grid-template-columns:1.55fr .95fr;gap:12px;margin-bottom:12px}
+@media(max-width:880px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+.card h2{font-family:"Libre Franklin";font-size:16px;margin:0;letter-spacing:-.01em}
+.card h3{font-size:13px;margin:0}
+.card .hint{font-size:12.5px;color:var(--ink2);line-height:1.5;margin:6px 0 0}
+.insight{background:var(--teal-dark);color:#E6FFFA;border-radius:var(--radius);padding:18px 18px 16px}
+@media(prefers-color-scheme:dark){.insight{background:#0F2E2A}}
+.insight h2{color:white}
+.insight p{color:#C7EDE8;font-size:13.5px;line-height:1.6;margin:8px 0 0}
+.insight strong{color:white}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-top:10px}
+.dot{width:10px;height:10px;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:5px}
+.tablewrap{overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);font-weight:700;padding:10px 10px;border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--ink)}
+td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.row{cursor:pointer} tr.row:hover td{background:var(--surface2)}
+tr.row.selected td{background:var(--teal-light)}
+.badge{display:inline-flex;padding:3px 7px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.02em}
+.badge.on{background:var(--green-bg);color:var(--green)} .badge.watch{background:var(--amber-bg);color:var(--amber)} .badge.risk{background:var(--red-bg);color:var(--red)}
+.bar{height:6px;background:var(--surface2);border-radius:999px;overflow:hidden;min-width:72px}
+.bar i{display:block;height:100%;border-radius:999px}
+.detail{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
+@media(max-width:800px){.detail{grid-template-columns:1fr}}
+.mini{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+.mini label{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);font-weight:700}
+.mini .big{font-size:22px;font-weight:800;font-family:"Libre Franklin";margin:6px 0 2px}
+select, input[type=text]{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px;color:var(--ink);font:inherit;font-size:13.5px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:6px}
+.search{flex:1;min-width:180px}
+.footer{font-size:12px;color:var(--ink3);line-height:1.6;margin-top:16px}
+.byline{font-size:12.5px;color:var(--ink2);font-weight:600;margin-top:10px}
+svg text{font-family:"IBM Plex Mono",monospace}
+@media(max-width:640px){ .wrap{padding:14px 12px 28px} .top h1{font-size:24px} th.opt,td.opt{display:none} }
+@media(max-width:560px){ th.spsf,td.spsf{display:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Retail Performance<br><span>Diagnostics</span></h1>
+      <p class="sub" id="subtitle">Actual vs. target, decomposed into traffic, conversion and basket — so you can see not just <em>which</em> stores are missing, but <em>why</em>. Demo dataset: 24 stores, FY 2026.</p>
+    </div>
+    <div class="controls">
+      <div class="seg" id="periodSeg" role="tablist" aria-label="Period"></div>
+    </div>
+  </div>
+
+  <div class="databar">
+    <div class="datactions">
+      <button class="btn primary" id="uploadBtn" type="button">Upload CSV</button>
+      <button class="btn" id="templateBtn" type="button">Download template</button>
+      <button class="btn" id="exportBtn" type="button">Export scorecard CSV</button>
+      <button class="btn" id="resetBtn" type="button" style="display:none">Reset demo data</button>
+      <input type="file" id="fileInput" accept=".csv,text/csv" hidden>
+    </div>
+    <p class="datastatus" id="dataStatus">Showing the built-in demo dataset. Upload a CSV to replace it — every chart, filter, KPI and insight below recalculates from your file.</p>
+    <p class="datahint">CSV columns: <span class="mono">store, region, period, actual, target</span> — plus optional <span class="mono">traffic</span> (% vs last year), <span class="mono">conversion</span> (%), <span class="mono">basket</span> ($) and <span class="mono">sqft</span>. Amounts in dollars, one row per store per period.</p>
+  </div>
+
+  <div class="pills" id="regionPills"></div>
+
+  <section class="kpis" id="kpis"></section>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Variance bridge — target to actual</h2>
+      <p class="hint" id="bridgeHint">How the gap breaks down for the selected view.</p>
+      <div id="waterfall" style="margin-top:12px"></div>
+      <div class="legend"><span><i class="dot" style="background:var(--ink)"></i>Target / Actual</span><span><i class="dot" style="background:var(--green)"></i>Positive driver</span><span><i class="dot" style="background:var(--red)"></i>Negative driver</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="insight" id="insightBox"></div>
+      <div class="card" style="flex:1">
+        <h2>Attainment by region</h2>
+        <p class="hint">Share of target achieved. Dashed line = 100%.</p>
+        <div id="regionChart" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card tablewrap">
+    <div class="toolbar">
+      <div><h2>Store scorecard</h2><p class="hint" style="margin-top:4px">Click a store for its diagnosis. Click a column to sort.</p><p class="hint" id="spsfNote" style="display:none;margin-top:4px"><strong>Sales / sq ft</strong> = period sales ÷ store size. It normalizes performance for store size, so different-sized stores can be compared fairly — a small store can trail on total sales yet lead per square foot.</p></div>
+      <input class="search" id="search" type="text" placeholder="Search store or city…">
+    </div>
+    <div style="overflow-x:auto">
+    <table id="storeTable">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    </div>
+    <div id="detailArea"></div>
+  </div>
+
+  <p class="footer">Method: Sales = Traffic × Conversion × Average basket. Each driver’s contribution is isolated by holding the other two at plan, so the three effects sum to the total variance (small interaction residual allocated pro-rata). Diagnosis rules flag the dominant negative driver per store. <span id="dataNote">All figures are a fictional demo dataset for portfolio purposes.</span></p>
+  <p class="byline">Designed &amp; built by Fan (David) Xu.</p>
+</div>
+
+<script>
+// ---- Demo dataset: 24 stores (targets in $k; sqft = selling space) ----
+var DEMO=[
+ {name:"Yorkdale",city:"Toronto",region:"GTA",target:1840,traffic:2.1,conv:21.4,convPlan:20.8,atv:86,atvPlan:84,sqft:9800},
+ {name:"Eaton Centre",city:"Toronto",region:"GTA",target:1720,traffic:-4.8,conv:18.2,convPlan:20.5,atv:78,atvPlan:82,sqft:8600},
+ {name:"Square One",city:"Mississauga",region:"GTA",target:1480,traffic:1.4,conv:20.1,convPlan:19.6,atv:82,atvPlan:80,sqft:9100},
+ {name:"Scarborough Town",city:"Scarborough",region:"GTA",target:1120,traffic:-7.2,conv:17.6,convPlan:19.8,atv:71,atvPlan:78,sqft:7400},
+ {name:"Vaughan Mills",city:"Vaughan",region:"GTA",target:1210,traffic:3.6,conv:19.8,convPlan:19.2,atv:79,atvPlan:77,sqft:11200},
+ {name:"Markville",city:"Markham",region:"GTA",target:980,traffic:-1.9,conv:19.4,convPlan:20.0,atv:74,atvPlan:76,sqft:6800},
+ {name:"Fairview Mall",city:"North York",region:"GTA",target:1040,traffic:0.8,conv:20.6,convPlan:20.1,atv:81,atvPlan:79,sqft:7200},
+ {name:"Sherway Gardens",city:"Etobicoke",region:"GTA",target:1090,traffic:-2.4,conv:18.9,convPlan:20.2,atv:83,atvPlan:85,sqft:8900},
+ {name:"Lime Ridge",city:"Hamilton",region:"Ontario",target:860,traffic:1.8,conv:20.3,convPlan:19.9,atv:76,atvPlan:75,sqft:6600},
+ {name:"Conestoga",city:"Waterloo",region:"Ontario",target:790,traffic:-5.6,conv:18.4,convPlan:20.0,atv:72,atvPlan:77,sqft:6400},
+ {name:"White Oaks",city:"London",region:"Ontario",target:720,traffic:0.4,conv:19.7,convPlan:19.5,atv:75,atvPlan:74,sqft:6900},
+ {name:"Rideau Centre",city:"Ottawa",region:"Ontario",target:1180,traffic:2.9,conv:21.0,convPlan:20.4,atv:84,atvPlan:82,sqft:8400},
+ {name:"Cataraqui",city:"Kingston",region:"Ontario",target:540,traffic:-3.1,conv:19.1,convPlan:19.7,atv:73,atvPlan:75,sqft:5200},
+ {name:"Pacific Centre",city:"Vancouver",region:"West",target:1560,traffic:4.2,conv:21.8,convPlan:21.0,atv:88,atvPlan:85,sqft:9300},
+ {name:"Metropolis Metrotown",city:"Burnaby",region:"West",target:1320,traffic:-1.2,conv:19.5,convPlan:20.3,atv:77,atvPlan:80,sqft:8800},
+ {name:"Chinook Centre",city:"Calgary",region:"West",target:1240,traffic:1.1,conv:20.4,convPlan:20.0,atv:82,atvPlan:81,sqft:9600},
+ {name:"West Edmonton",city:"Edmonton",region:"West",target:1180,traffic:-6.4,conv:17.9,convPlan:20.1,atv:70,atvPlan:78,sqft:10800},
+ {name:"Polo Park",city:"Winnipeg",region:"West",target:680,traffic:-0.6,conv:19.9,convPlan:19.8,atv:76,atvPlan:75,sqft:7100},
+ {name:"Midtown Plaza",city:"Saskatoon",region:"West",target:490,traffic:2.4,conv:20.2,convPlan:19.7,atv:74,atvPlan:73,sqft:5400},
+ {name:"Carrefour Laval",city:"Laval",region:"East",target:1090,traffic:1.6,conv:20.7,convPlan:20.2,atv:80,atvPlan:79,sqft:9000},
+ {name:"Galeries Capitale",city:"Québec City",region:"East",target:830,traffic:-2.8,conv:18.7,convPlan:20.0,atv:72,atvPlan:77,sqft:6700},
+ {name:"Mic Mac Mall",city:"Halifax",region:"East",target:610,traffic:0.9,conv:20.0,convPlan:19.6,atv:78,atvPlan:76,sqft:6300},
+ {name:"Regent Mall",city:"Fredericton",region:"East",target:420,traffic:-4.1,conv:19.3,convPlan:19.9,atv:73,atvPlan:75,sqft:4600},
+ {name:"Place d'Orléans",city:"Ottawa",region:"Ontario",target:690,traffic:1.9,conv:20.5,convPlan:20.0,atv:79,atvPlan:77,sqft:5900}
+];
+// Period multipliers (target & performance shift by period)
+var PERIOD_DEFS=[{key:"Q1",t:0.24,label:"Q1"},{key:"Q2",t:0.25,label:"Q2"},{key:"Q3",t:0.26,label:"Q3"},{key:"YTD",t:0.75,label:"YTD (Q1–Q3)"}];
+var REGION_LABELS={"GTA":"GTA","Ontario":"Ontario (ex-GTA)","West":"West — BC & Prairies","East":"East — QC & Atlantic"};
+
+// ---- Active dataset (replaced wholesale on CSV upload) ----
+// STORES: [{id,name,city,region,sqft,byPeriod:{PERIOD:{target,actual,traffic,conv,convPlan,basket,basketPlan}}}] — money in $k
+var STORES=[], PERIOD_LIST=[], PERIOD_LABELS={};
+var HAS_PLANS=false, HAS_TRAFFIC=false, HAS_CONV=false, HAS_BASKET=false, HAS_SQFT=false;
+var DATASET={source:"demo",rows:0,file:""};
+var state={period:"Q3",region:"All",sort:"att",sortDir:1,selected:4,query:""};
+
+function annualSales(s){ return Math.round(s.target*(1+s.traffic/100)*(s.conv/s.convPlan)*(s.atv/s.atvPlan)); }
+function loadDemo(){
+  STORES=DEMO.map(function(s,i){
+    var sales=annualSales(s), by={};
+    PERIOD_DEFS.forEach(function(p){ by[p.key]={target:s.target*p.t, actual:sales*p.t, traffic:s.traffic, conv:s.conv, convPlan:s.convPlan, basket:s.atv, basketPlan:s.atvPlan}; });
+    return {id:i+1, name:s.name, city:s.city, region:s.region, sqft:s.sqft, byPeriod:by};
+  });
+  PERIOD_LIST=PERIOD_DEFS.map(function(p){return p.key});
+  PERIOD_LABELS={}; PERIOD_DEFS.forEach(function(p){ PERIOD_LABELS[p.key]=p.label; });
+  HAS_PLANS=true; HAS_TRAFFIC=true; HAS_CONV=true; HAS_BASKET=true; HAS_SQFT=true;
+  DATASET={source:"demo",rows:0,file:""};
+}
+function pd(s){ return s.byPeriod[state.period]||null; }
+function attOf(s){ var d=pd(s); if(!d||!d.target) return null; return d.actual/d.target*100; }
+function periodLabel(){ return PERIOD_LABELS[state.period]||state.period; }
+function distinctRegions(){ var seen={}, out=[]; STORES.forEach(function(s){ if(!seen[s.region]){ seen[s.region]=1; out.push(s.region); } }); return out; }
+
+function filtered(){
+  return STORES.filter(function(s){ return (state.region==="All"||s.region===state.region) && (s.name+" "+(s.city||"")+" "+s.region).toLowerCase().indexOf(state.query.toLowerCase())>-1; });
+}
+function allInRegion(){
+  return STORES.filter(function(s){ return state.region==="All"||s.region===state.region; });
+}
+function fmtK(k){ return "$"+k.toLocaleString()+"k"; }
+function pct(x,d){ return (x>=0?"+":"")+x.toFixed(d==null?1:d)+"%"; }
+function fmtSPSF(v){ return "$"+(v>=100? Math.round(v).toLocaleString() : v.toFixed(1)); }
+function spsfOf(s){ var d=pd(s); if(!d||!s.sqft) return null; return d.actual*1000/s.sqft; }
+
+function driversFor(list){
+  // aggregate driver contributions in $k for the selected period
+  var trafficEff=0, convEff=0, basketEff=0, target=0, actual=0;
+  list.forEach(function(s){
+    var d=pd(s); if(!d) return;
+    target+=d.target; actual+=d.actual;
+    if(HAS_PLANS){
+      trafficEff+= d.target*(d.traffic||0)/100;
+      convEff+= d.target*(d.conv/d.convPlan-1);
+      basketEff+= d.target*(d.basket/d.basketPlan-1);
+    } else if(d.traffic!=null){
+      trafficEff+= d.target*d.traffic/100;
+    }
+  });
+  var totalVar=actual-target, effects;
+  if(HAS_PLANS){
+    var sum=trafficEff+convEff+basketEff;
+    var scale= sum!==0? totalVar/sum : 1;
+    effects=[{label:"Traffic",val:trafficEff*scale},{label:"Conversion",val:convEff*scale},{label:"Basket",val:basketEff*scale}];
+  } else {
+    effects=[];
+    if(HAS_TRAFFIC) effects.push({label:"Traffic",val:trafficEff});
+    effects.push({label:(HAS_CONV||HAS_BASKET)?"Conversion & basket":"Net variance", val:totalVar-trafficEff});
+  }
+  return {target:target,actual:actual,traffic:trafficEff,conv:convEff,basket:basketEff,totalVar:totalVar,effects:effects};
+}
+
+function statusOf(att){ if(att==null) return ["No data","watch"]; if(att>=100) return ["On target","on"]; if(att>=92) return ["Watch","watch"]; return ["At risk","risk"]; }
+function chainBench(){
+  var ts=[],cs=[],bs=[];
+  STORES.forEach(function(s){ var d=pd(s); if(!d) return; if(d.traffic!=null)ts.push(d.traffic); if(d.conv!=null)cs.push(d.conv); if(d.basket!=null)bs.push(d.basket); });
+  function avg(a){ return a.length? a.reduce(function(x,y){return x+y},0)/a.length : null; }
+  return {traffic:avg(ts), conv:avg(cs), basket:avg(bs)};
+}
+function diagnosis(s){
+  var d=pd(s); if(!d) return {title:"No data", body:"This store has no figures for "+periodLabel()+" in the current dataset."};
+  var att=attOf(s);
+  if(att!=null && att>=100){
+    if(HAS_PLANS) return {title:"Beating plan", body:"All three drivers are at or above plan. Protect staffing at peak and document what’s working — this store is a candidate to pilot new service standards."};
+    if(HAS_TRAFFIC||HAS_CONV||HAS_BASKET) return {title:"Beating target", body:"This store is above target for the period. Protect staffing at peak and document what’s working — this store is a candidate to pilot new service standards."};
+    return {title:"Beating target", body:"This store is above target for the period. Keep doing what’s working and document it for the rest of the chain."};
+  }
+  if(HAS_PLANS){
+    var tf=d.traffic, cf=(d.conv/d.convPlan-1)*100, af=(d.basket/d.basketPlan-1)*100;
+    var drivers=[["Traffic",tf],["Conversion",cf],["Basket",af]];
+    drivers.sort(function(a,b){return a[1]-b[1]});
+    var worst=drivers[0];
+    if(worst[0]==="Traffic") return {title:"Traffic problem", body:"Footfall is the dominant drag ("+pct(tf)+" vs LY) while in-store execution is comparatively intact. Levers: local marketing, mall-partner events, window / entrance conversion, and checking whether a nearby competitor or construction is diverting traffic."};
+    if(worst[0]==="Conversion") return {title:"Conversion problem", body:"Shoppers are coming in but not buying — conversion is "+pct(cf)+" vs plan. Levers: peak-hour staffing coverage, fitting-room / service wait times, stock availability in core sizes, and manager floor presence at weekends."};
+    return {title:"Basket problem", body:"Transactions are holding up but spend per basket is "+pct(af)+" vs plan. Levers: attachment selling, promotion depth discipline (discounting may be training customers to wait), and mix shift toward full-price categories."};
+  }
+  // Uploaded data: benchmark each driver against the chain average in the file
+  var b=chainBench(), gaps=[];
+  if(d.traffic!=null && b.traffic!=null) gaps.push(["Traffic", d.traffic-b.traffic]);
+  if(d.conv!=null && b.conv) gaps.push(["Conversion", (d.conv/b.conv-1)*100]);
+  if(d.basket!=null && b.basket) gaps.push(["Basket", (d.basket/b.basket-1)*100]);
+  if(!gaps.length) return {title:"Below target", body:"This store is at "+(att==null?"—":att.toFixed(1)+"%")+" of target. The uploaded file has no traffic, conversion or basket columns, so the shortfall can’t be split by driver — add those columns to the CSV to unlock driver diagnosis."};
+  gaps.sort(function(a,b2){return a[1]-b2[1]});
+  var w=gaps[0];
+  if(w[1]>=0) return {title:"Below target, no single driver", body:"All three drivers are at or above the chain average, yet the store is below target — the target itself may be stretched relative to this store’s trading pattern. Review how the target was set before changing store execution."};
+  if(w[0]==="Traffic") return {title:"Traffic problem", body:"Footfall is the dominant drag ("+pct(d.traffic)+" vs LY, chain average "+pct(b.traffic)+") while in-store execution is comparatively intact. Levers: local marketing, mall-partner events, window / entrance conversion, and checking whether a nearby competitor or construction is diverting traffic."};
+  if(w[0]==="Conversion") return {title:"Conversion problem", body:"Shoppers are coming in but not buying — conversion is "+d.conv.toFixed(1)+"% vs a chain average of "+b.conv.toFixed(1)+"%. Levers: peak-hour staffing coverage, fitting-room / service wait times, stock availability in core sizes, and manager floor presence at weekends."};
+  return {title:"Basket problem", body:"Transactions are holding up but spend per basket is $"+Math.round(d.basket)+" vs a chain average of $"+Math.round(b.basket)+". Levers: attachment selling, promotion depth discipline (discounting may be training customers to wait), and mix shift toward full-price categories."};
+}
+
+function renderControls(){
+  var seg="";
+  PERIOD_LIST.forEach(function(p){ seg+='<button data-p="'+p+'"'+(state.period===p?' class="active"':"")+">"+p+"</button>"; });
+  document.getElementById("periodSeg").innerHTML=seg;
+  var pills='<button class="pill'+(state.region==="All"?" active":"")+'" data-r="All">All regions</button>';
+  distinctRegions().forEach(function(r){ pills+='<button class="pill'+(state.region===r?" active":"")+'" data-r="'+r+'">'+(REGION_LABELS[r]||r)+"</button>"; });
+  document.getElementById("regionPills").innerHTML=pills;
+  document.getElementById("spsfNote").style.display= HAS_SQFT? "block":"none";
+}
+
+function renderKPIs(){
+  var list=allInRegion().filter(function(s){return pd(s)});
+  var d=driversFor(list);
+  var att= d.target? d.actual/d.target*100 : 0;
+  var onTarget=list.filter(function(s){return attOf(s)>=100}).length;
+  var sorted=list.slice().sort(function(a,b){return attOf(a)-attOf(b)});
+  var worst=sorted[0], best=sorted[sorted.length-1];
+  var dragHtml= worst? '<div class="kpi"><label>Biggest drag / leader</label><div class="val" style="font-size:19px;line-height:1.2;margin-top:8px">'+worst.name+' <span class="down mono" style="font-size:14px">'+attOf(worst).toFixed(1)+'%</span></div><p>Leader: '+best.name+' · '+attOf(best).toFixed(1)+'% of target</p></div>'
+                     : '<div class="kpi"><label>Biggest drag / leader</label><div class="val" style="font-size:19px;line-height:1.2;margin-top:8px">—</div><p>No stores in view for this period.</p></div>';
+  document.getElementById("kpis").innerHTML=
+   kpi("Net sales — "+periodLabel(), fmtK(Math.round(d.actual)), (att-100), "vs target of "+fmtK(Math.round(d.target)))+
+   kpi("Target attainment", att.toFixed(1)+"%", att-100, list.length+" stores in view")+
+   kpi("Stores on target", onTarget+" / "+list.length, null, onTarget===list.length?"Every store at or above plan":(list.length-onTarget)+" stores below plan")+
+   dragHtml;
+  function kpi(label,val,delta,note){
+    var dHtml= delta==null? "" : '<span class="delta '+(delta>=0?"up":"down")+'">'+(delta>=0?"▲ ":"▼ ")+Math.abs(delta).toFixed(1)+"% vs target</span>";
+    return '<div class="kpi"><label>'+label+'</label><div class="val">'+val+'</div>'+dHtml+'<p>'+note+'</p></div>';
+  }
+}
+
+function renderWaterfall(){
+  var list=allInRegion(); var d=driversFor(list);
+  var steps=[{label:"Target",val:d.target,type:"total"}];
+  d.effects.forEach(function(e){ steps.push({label:e.label,val:e.val,type:"delta"}); });
+  steps.push({label:"Actual",val:d.actual,type:"total"});
+  var path=[d.target], cum=d.target;
+  d.effects.forEach(function(e){ cum+=e.val; path.push(cum); });
+  var max=Math.max(d.target,d.actual)*1.12, min=Math.min.apply(null,[0].concat(path));
+  var W=640,H=250,padL=8,padB=28,padT=18, n=steps.length, bw= n<=5?78:64;
+  var stepX= n>1? (W-padL*2-bw)/(n-1) : 0;
+  var y=function(v){ return padT+(max-v)/(max-min)*(H-padT-padB); };
+  cum=d.target; var svg='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Variance bridge chart">';
+  svg+='<line x1="0" x2="'+W+'" y1="'+y(d.target)+'" y2="'+y(d.target)+'" stroke="var(--line2)" stroke-dasharray="4 4"/>';
+  steps.forEach(function(st,i){
+    var x=padL+i*stepX;
+    var top,bot,color;
+    if(st.type==="total"){ top=y(st.val); bot=y(min); color="var(--ink)"; }
+    else{ var start=cum; cum+=st.val; top=y(Math.max(start,cum)); bot=y(Math.min(start,cum)); color= st.val>=0? "var(--green)":"var(--red)"; }
+    var h=Math.max(3,bot-top);
+    svg+='<rect x="'+x+'" y="'+top+'" width="'+bw+'" height="'+h+'" rx="5" fill="'+color+'" opacity="'+(st.type==="total"?1:.88)+'"/>';
+    var labelVal= st.type==="total"? fmtK(Math.round(st.val)) : (st.val>=0?"+":"−")+ "$"+Math.abs(Math.round(st.val))+"k";
+    svg+='<text x="'+(x+bw/2)+'" y="'+(top-7)+'" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">'+labelVal+'</text>';
+    svg+='<text x="'+(x+bw/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" fill="var(--ink2)">'+st.label+'</text>';
+    if(i>0 && st.type==="delta"){ var prevX=padL+(i-1)*stepX+bw; svg+='<line x1="'+prevX+'" x2="'+x+'" y1="'+y(cum-st.val)+'" y2="'+y(cum-st.val)+'" stroke="var(--line2)" stroke-dasharray="3 3"/>'; }
+  });
+  svg+='</svg>';
+  document.getElementById("waterfall").innerHTML=svg;
+  var mainEff=d.effects.slice().sort(function(a,b){return Math.abs(b.val)-Math.abs(a.val)})[0];
+  document.getElementById("bridgeHint").textContent="For "+(state.region==="All"?"all regions":state.region)+" in "+periodLabel()+", the "+fmtK(Math.abs(Math.round(d.totalVar)))+" "+(d.totalVar>=0?"surplus":"shortfall")+" is driven mainly by "+(mainEff? mainEff.label.toLowerCase():"—")+".";
+}
+
+function renderRegions(){
+  var regions=distinctRegions();
+  var html="", stats=[];
+  regions.forEach(function(r){
+    var list=STORES.filter(function(s){return s.region===r});
+    var t=0,a=0;
+    list.forEach(function(s){ var d=pd(s); if(d){ t+=d.target; a+=d.actual; } });
+    t=Math.round(t); a=Math.round(a);
+    var att= t? a/t*100:0; var w=Math.min(100,att);
+    var color= att>=100? "var(--green)" : att>=92? "var(--amber)":"var(--red)";
+    stats.push({r:r,t:t,varr:a-t,att:att});
+    html+='<div style="margin-bottom:13px"><div style="display:flex;justify-content:space-between;font-size:13px"><strong>'+r+'</strong><span class="mono" style="color:var(--ink2)">'+att.toFixed(1)+'% · '+fmtK(a)+' / '+fmtK(t)+'</span></div><div class="bar" style="margin-top:6px;position:relative"><i style="width:'+w+'%;background:'+color+'"></i></div></div>';
+  });
+  var above=stats.filter(function(x){return x.att>=100});
+  var drag=stats.slice().sort(function(a,b){return a.varr-b.varr})[0];
+  var largest=stats.slice().sort(function(a,b){return b.t-a.t})[0];
+  var note="Figures are on the selected period basis and sum to the KPI total above.";
+  if(above.length===1) note+=" "+above[0].r+" is the only region above plan.";
+  else if(above.length>1) note+=" Above plan: "+above.map(function(x){return x.r}).join(", ")+".";
+  if(drag && drag.varr<0) note+=" "+drag.r+" is "+(largest&&drag.r===largest.r?"the largest region and ":"")+"the largest dollar drag.";
+  document.getElementById("regionChart").innerHTML=html+'<p class="hint">'+note+"</p>";
+}
+
+function renderInsight(){
+  var list=allInRegion().filter(function(s){return pd(s)}).slice().sort(function(a,b){return attOf(a)-attOf(b)});
+  if(!list.length){ document.getElementById("insightBox").innerHTML='<h2 style="font-family:Libre Franklin;font-size:16px;margin:0">What needs attention</h2><p>No stores have data for '+periodLabel()+' in this view.</p>'; return; }
+  var worst=list[0], second=list[1]||list[0];
+  var d=driversFor(allInRegion());
+  var rec, recText;
+  if(HAS_PLANS){
+    var rec1=(pd(worst).conv/pd(worst).convPlan-1)*pd(worst).target;
+    var rec2= second!==worst? (pd(second).conv/pd(second).convPlan-1)*pd(second).target : 0;
+    rec=Math.round(Math.abs(rec1+rec2));
+    recText="Fixing conversion alone in the two weakest stores would recover roughly <strong>"+fmtK(rec)+"</strong> in the period.";
+  } else {
+    var chainAtt= d.target? d.actual/d.target*100 : 0;
+    var short=0;
+    var counted={};
+    [worst,second].forEach(function(s){ if(counted[s.id])return; counted[s.id]=1; var dd=pd(s); short+=Math.max(0, chainAtt/100*dd.target-dd.actual); });
+    rec=Math.round(short);
+    recText="Bringing the two weakest stores up to the chain-average attainment ("+chainAtt.toFixed(1)+"%) would recover roughly <strong>"+fmtK(rec)+"</strong> in the period.";
+  }
+  document.getElementById("insightBox").innerHTML='<h2 style="font-family:Libre Franklin;font-size:16px;margin:0">What needs attention</h2><p><strong>'+worst.name+' ('+(worst.city||worst.region)+')</strong> is the biggest drag at <strong>'+attOf(worst).toFixed(1)+'%</strong> of target — diagnosed as a <strong>'+diagnosis(worst).title.toLowerCase()+'</strong>. <strong>'+second.name+'</strong> follows at '+attOf(second).toFixed(1)+'%. Together they account for a disproportionate share of the '+fmtK(Math.abs(Math.round(d.totalVar)))+' variance in this view. '+recText+'</p>';
+}
+
+function scorecardColumns(){
+  var cols=[{k:"name",label:"Store"},{k:"att",label:"Attainment"},{k:"sales",label:"Sales"}];
+  if(HAS_TRAFFIC) cols.push({k:"traffic",label:"Traffic vs LY"});
+  if(HAS_CONV) cols.push({k:"conv",label:"Conversion",cls:"opt"});
+  if(HAS_BASKET) cols.push({k:"atv",label:"Avg basket",cls:"opt"});
+  if(HAS_SQFT) cols.push({k:"spsf",label:"Sales / sq ft",cls:"spsf"});
+  cols.push({k:null,label:"Status"});
+  return cols;
+}
+function sortValue(s,k){
+  var d=pd(s);
+  if(k==="name") return s.name;
+  if(k==="att") return attOf(s);
+  if(!d) return null;
+  if(k==="sales") return d.actual;
+  if(k==="traffic") return d.traffic;
+  if(k==="conv") return d.conv;
+  if(k==="atv") return d.basket;
+  if(k==="spsf") return spsfOf(s);
+  return null;
+}
+function viewList(){
+  var list=filtered().slice(), key=state.sort;
+  list.sort(function(a,b){
+    var va=sortValue(a,key), vb=sortValue(b,key);
+    if(va==null && vb==null) return 0;
+    if(va==null) return 1;
+    if(vb==null) return -1;
+    if(typeof va==="string") return state.sortDir*va.localeCompare(vb);
+    return state.sortDir*(va-vb);
+  });
+  return list;
+}
+function renderHead(){
+  var html="<tr>";
+  scorecardColumns().forEach(function(c){
+    html+="<th"+(c.cls?' class="'+c.cls+'"':"")+(c.k?' data-sort="'+c.k+'"':"")+">"+c.label+(c.k?" ↕":"")+"</th>";
+  });
+  document.getElementById("thead").innerHTML=html+"</tr>";
+}
+function renderTable(){
+  renderHead();
+  var list=viewList();
+  var cols=scorecardColumns();
+  var html="";
+  list.forEach(function(s){
+    var d=pd(s), att=attOf(s), st=statusOf(att);
+    var color= att==null? "var(--ink3)" : att>=100? "var(--green)": att>=92? "var(--amber)":"var(--red)";
+    html+='<tr class="row '+(state.selected===s.id?"selected":"")+'" data-id="'+s.id+'">';
+    cols.forEach(function(c){
+      if(c.k==="name") html+='<td><strong>'+s.name+'</strong><div style="font-size:12px;color:var(--ink2)">'+(s.city? s.city+" · ":"")+s.region+"</div></td>";
+      else if(c.k==="att") html+= att==null? '<td class="mono">—</td>' : '<td><div style="display:flex;align-items:center;gap:8px"><span class="mono" style="font-weight:600">'+att.toFixed(1)+'%</span><span class="bar"><i style="width:'+Math.min(100,att)+'%;background:'+color+'"></i></span></div></td>';
+      else if(c.k==="sales") html+='<td class="mono">'+(d? fmtK(Math.round(d.actual)):"—")+"</td>";
+      else if(c.k==="traffic") html+= (d&&d.traffic!=null)? '<td class="mono '+(d.traffic>=0?"up":"down")+'">'+pct(d.traffic)+"</td>" : '<td class="mono">—</td>';
+      else if(c.k==="conv") html+= (d&&d.conv!=null)? '<td class="mono opt">'+d.conv.toFixed(1)+"%"+(HAS_PLANS&&d.convPlan!=null?' <span style="color:var(--ink3);font-size:12px">/ '+d.convPlan.toFixed(1)+"% plan</span>":"")+"</td>" : '<td class="mono opt">—</td>';
+      else if(c.k==="atv") html+= (d&&d.basket!=null)? '<td class="mono opt">$'+Math.round(d.basket)+(HAS_PLANS&&d.basketPlan!=null?' <span style="color:var(--ink3);font-size:12px">/ $'+Math.round(d.basketPlan)+"</span>":"")+"</td>" : '<td class="mono opt">—</td>';
+      else if(c.k==="spsf"){ var v=spsfOf(s); html+='<td class="mono spsf">'+(v==null?"—":fmtSPSF(v))+"</td>"; }
+      else if(c.k===null) html+='<td><span class="badge '+st[1]+'">'+st[0]+"</span></td>";
+    });
+    html+="</tr>";
+  });
+  if(!list.length) html='<tr><td colspan="'+cols.length+'" style="color:var(--ink2);padding:18px 10px">No stores match that search.</td></tr>';
+  document.getElementById("tbody").innerHTML=html;
+  var rows=document.querySelectorAll("tr.row");
+  rows.forEach(function(r){ r.addEventListener("click",function(){ state.selected=parseInt(r.getAttribute("data-id")); renderTable(); }); });
+  renderDetail();
+}
+function renderDetail(){
+  var s=STORES.find(function(x){return x.id===state.selected});
+  if(!s){ document.getElementById("detailArea").innerHTML=""; return; }
+  var d=pd(s);
+  if(!d){ document.getElementById("detailArea").innerHTML='<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:16px"><h3 style="font-family:Libre Franklin;font-size:17px">'+s.name+'</h3><p style="font-size:13px;color:var(--ink2)">No data for '+periodLabel()+' in the current dataset.</p></div>'; return; }
+  var dg=diagnosis(s), att=attOf(s);
+  var pSales=Math.round(d.actual), pTarget=Math.round(d.target), pGap=pSales-pTarget;
+  var convHtml, basketHtml;
+  if(d.conv==null){ convHtml='<div class="big">—</div><p style="font-size:12.5px;color:var(--ink2);margin:0">Not in dataset</p>'; }
+  else if(HAS_PLANS && d.convPlan!=null){ var cf=(d.conv/d.convPlan-1)*100; convHtml='<div class="big">'+d.conv.toFixed(1)+'%</div><p style="font-size:12.5px;color:var(--ink2);margin:0">'+pct(cf)+' vs plan ('+d.convPlan.toFixed(1)+'%)</p>'; }
+  else { var b=chainBench(); var cf2= b.conv? (d.conv/b.conv-1)*100:0; convHtml='<div class="big">'+d.conv.toFixed(1)+'%</div><p style="font-size:12.5px;color:var(--ink2);margin:0">'+pct(cf2)+' vs chain avg'+(b.conv?' ('+b.conv.toFixed(1)+'%)':"")+'</p>'; }
+  if(d.basket==null){ basketHtml='<div class="big">—</div><p style="font-size:12.5px;color:var(--ink2);margin:0">Not in dataset</p>'; }
+  else if(HAS_PLANS && d.basketPlan!=null){ var af=(d.basket/d.basketPlan-1)*100; basketHtml='<div class="big">$'+Math.round(d.basket)+'</div><p style="font-size:12.5px;color:var(--ink2);margin:0">'+pct(af)+' vs plan ($'+Math.round(d.basketPlan)+')</p>'; }
+  else { var b2=chainBench(); var af2= b2.basket? (d.basket/b2.basket-1)*100:0; basketHtml='<div class="big">$'+Math.round(d.basket)+'</div><p style="font-size:12.5px;color:var(--ink2);margin:0">'+pct(af2)+' vs chain avg'+(b2.basket?' ($'+Math.round(b2.basket)+')':"")+'</p>'; }
+  var spsfHtml="";
+  if(HAS_SQFT && s.sqft){ var v=spsfOf(s); spsfHtml='<label style="display:block;margin-top:12px">Sales / sq ft — '+periodLabel()+'</label><div class="big">'+(v==null?"—":fmtSPSF(v))+'</div><p style="font-size:12.5px;color:var(--ink2);margin:0">Store size '+s.sqft.toLocaleString()+' sq ft — normalizes for store size so different-sized stores compare fairly.</p>'; }
+  document.getElementById("detailArea").innerHTML='<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:16px"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between"><h3 style="font-family:Libre Franklin;font-size:17px">'+s.name+' — '+(s.city||s.region)+' <span class="badge '+statusOf(att)[1]+'" style="margin-left:6px;vertical-align:middle">'+statusOf(att)[0]+'</span></h3><span class="mono" style="font-size:13px;color:var(--ink2)">'+(att==null?"—":att.toFixed(1)+'%')+' of target · '+fmtK(pSales)+' '+periodLabel()+' sales vs '+fmtK(pTarget)+' target</span></div>'+
+  '<div class="detail"><div class="mini"><label>Diagnosis</label><div class="big" style="font-size:18px">'+dg.title+'</div><p style="font-size:13px;color:var(--ink2);line-height:1.55;margin:6px 0 0">'+dg.body+'</p></div>'+
+  '<div class="mini"><label>Traffic</label><div class="big '+(d.traffic==null?"":(d.traffic>=0?"up":"down"))+'">'+(d.traffic==null?"—":pct(d.traffic))+'</div><p style="font-size:12.5px;color:var(--ink2);margin:0">Footfall vs last year</p><label style="display:block;margin-top:12px">Conversion</label>'+convHtml+'</div>'+
+  '<div class="mini"><label>Average basket</label>'+basketHtml+'<label style="display:block;margin-top:12px">Gap to target — '+periodLabel()+'</label><div class="big '+(pGap>=0?"up":"down")+'">'+(pGap>=0?"+":"−")+fmtK(Math.abs(pGap))+'</div><p style="font-size:12.5px;color:var(--ink2);margin:0">Period sales minus period target, same basis as the KPI cards above.</p>'+spsfHtml+'</div></div></div>';
+}
+
+function renderAll(){ renderControls(); renderKPIs(); renderWaterfall(); renderRegions(); renderInsight(); renderTable(); }
+
+// ---- CSV: parse, template, upload, export ----
+function parseCSV(text){
+  var rows=[], row=[], cur="", inQ=false, i, c;
+  text=text.replace(/^\ufeff/,"");
+  for(i=0;i<text.length;i++){ c=text[i];
+    if(inQ){ if(c==='"'){ if(text[i+1]==='"'){ cur+='"'; i++; } else inQ=false; } else cur+=c; }
+    else if(c==='"') inQ=true;
+    else if(c===","){ row.push(cur); cur=""; }
+    else if(c==="\n"){ row.push(cur); rows.push(row); row=[]; cur=""; }
+    else if(c!=="\r") cur+=c;
+  }
+  if(cur.length||row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(function(r){ return r.length>1 || (r.length===1 && r[0].trim()!==""); });
+}
+function parseNum(v){
+  if(v==null) return null;
+  v=String(v).trim().replace(/[$,\s]/g,"").replace(/%$/,"");
+  if(v===""||v==="-") return null;
+  var n=parseFloat(v);
+  return isNaN(n)? null : n;
+}
+function normPeriod(v){
+  if(v==null) return "";
+  v=String(v).trim();
+  var m=v.match(/q\s*([1-4])/i); if(m) return "Q"+m[1];
+  if(/ytd/i.test(v)) return "YTD";
+  return v.length>14? v.slice(0,14) : v;
+}
+function periodSortKey(p){ var m=p.match(/^Q([1-4])$/); if(m) return "0"+m[1]; if(p==="YTD") return "5"; return "6"+p.toLowerCase(); }
+var HEADER_MAP={store:"store",storename:"store",name:"store",location:"store",region:"region",period:"period",quarter:"period",
+  actual:"actual",actualsales:"actual",sales:"actual",revenue:"actual",netsales:"actual",
+  target:"target",targetsales:"target",goal:"target",
+  traffic:"traffic",trafficpct:"traffic",footfall:"traffic",
+  conversion:"conv",conversionrate:"conv",conversionpct:"conv",conv:"conv",
+  basket:"basket",avgbasket:"basket",averagebasket:"basket",basketsize:"basket",atv:"basket",
+  sqft:"sqft",squarefeet:"sqft",squarefootage:"sqft",storesize:"sqft",size:"sqft"};
+function csvCell(v){ v=(v==null?"":String(v)); return /[",\n]/.test(v)? '"'+v.replace(/"/g,'""')+'"' : v; }
+function downloadFile(name, text){
+  var blob=new Blob(["\ufeff"+text],{type:"text/csv;charset=utf-8"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 400);
+}
+function setStatus(msg, isErr){
+  var el=document.getElementById("dataStatus");
+  el.textContent=msg;
+  el.className= isErr? "datastatus err" : "datastatus";
+}
+function applyDataset(){
+  if(PERIOD_LIST.indexOf(state.period)<0) state.period=PERIOD_LIST[0];
+  if(state.region!=="All" && distinctRegions().indexOf(state.region)<0) state.region="All";
+  var keys=scorecardColumns().map(function(c){return c.k});
+  if(keys.indexOf(state.sort)<0){ state.sort="att"; state.sortDir=1; }
+  state.query=""; document.getElementById("search").value="";
+  var cand=STORES.filter(function(s){return pd(s)});
+  cand.sort(function(a,b){ return (attOf(a)==null?999:attOf(a))-(attOf(b)==null?999:attOf(b)); });
+  state.selected= cand.length? cand[0].id : null;
+  renderAll();
+}
+function handleUpload(text, fname){
+  var rows=parseCSV(text);
+  if(rows.length<2){ setStatus("That file has a header row but no data rows — nothing was loaded.", true); return; }
+  var head=rows[0].map(function(h){ return h.toLowerCase().replace(/[^a-z0-9]/g,""); });
+  var idx={};
+  head.forEach(function(h,i){ var key=HEADER_MAP[h]; if(key && idx[key]==null) idx[key]=i; });
+  var missing=["store","region","period","actual","target"].filter(function(k){ return idx[k]==null; });
+  if(missing.length){ setStatus("Missing required column(s): "+missing.join(", ")+". Download the template to see the expected format — your current data was kept.", true); return; }
+  function cell(row,k){ return idx[k]==null? null : row[idx[k]]; }
+  var recs=[], skipped=0;
+  for(var r=1;r<rows.length;r++){
+    var row=rows[r];
+    var store=String(cell(row,"store")||"").trim();
+    var region=String(cell(row,"region")||"").trim()||"Unspecified";
+    var period=normPeriod(cell(row,"period"));
+    var actual=parseNum(cell(row,"actual")), target=parseNum(cell(row,"target"));
+    if(!store||!period||actual==null||target==null){ skipped++; continue; }
+    recs.push({store:store, region:region, period:period, actual:actual, target:target,
+      traffic:parseNum(cell(row,"traffic")), conv:parseNum(cell(row,"conv")), basket:parseNum(cell(row,"basket")), sqft:parseNum(cell(row,"sqft"))});
+  }
+  if(!recs.length){ setStatus("No usable rows found — check that store, period, actual and target are filled in and the amounts are numbers. Your current data was kept.", true); return; }
+  var maxV=0; recs.forEach(function(rc){ maxV=Math.max(maxV, rc.actual, rc.target); });
+  var div= maxV>=10000? 1000:1; // amounts in dollars → $k; small values are taken as $k already
+  var map={}, order=[];
+  recs.forEach(function(rc){
+    var st=map[rc.store];
+    if(!st){ st={name:rc.store, city:"", region:rc.region, sqft:null, byPeriod:{}}; map[rc.store]=st; order.push(st); }
+    if(st.sqft==null && rc.sqft) st.sqft=rc.sqft;
+    var d=st.byPeriod[rc.period];
+    if(!d){ d={target:0, actual:0, traffic:null, conv:null, convPlan:null, basket:null, basketPlan:null}; st.byPeriod[rc.period]=d; }
+    d.actual+=rc.actual/div; d.target+=rc.target/div;
+    if(d.traffic==null && rc.traffic!=null) d.traffic=rc.traffic;
+    if(d.conv==null && rc.conv!=null) d.conv=rc.conv;
+    if(d.basket==null && rc.basket!=null) d.basket=rc.basket;
+  });
+  STORES=order.map(function(st,i){ return {id:i+1, name:st.name, city:st.city, region:st.region, sqft:st.sqft, byPeriod:st.byPeriod}; });
+  var pSeen={}; recs.forEach(function(rc){ pSeen[rc.period]=1; });
+  PERIOD_LIST=Object.keys(pSeen).sort(function(a,b){ var ka=periodSortKey(a), kb=periodSortKey(b); return ka<kb?-1:ka>kb?1:0; });
+  PERIOD_LABELS={}; PERIOD_LIST.forEach(function(p){ PERIOD_LABELS[p]=p; });
+  HAS_PLANS=false;
+  HAS_TRAFFIC=recs.some(function(rc){return rc.traffic!=null});
+  HAS_CONV=recs.some(function(rc){return rc.conv!=null});
+  HAS_BASKET=recs.some(function(rc){return rc.basket!=null});
+  HAS_SQFT=STORES.some(function(s){return !!s.sqft});
+  DATASET={source:"upload", rows:recs.length, file:fname};
+  document.getElementById("subtitle").innerHTML="Actual vs. target for your uploaded dataset — "+STORES.length+" stores across "+distinctRegions().length+" region(s), periods "+PERIOD_LIST.join(", ")+". Every figure below is computed from the file you provided.";
+  document.getElementById("dataNote").textContent="Figures computed from the uploaded file “"+fname+"”.";
+  document.getElementById("resetBtn").style.display="";
+  applyDataset();
+  setStatus("Loaded “"+fname+"”: "+STORES.length+" stores · "+recs.length+" rows · periods "+PERIOD_LIST.join(", ")+(skipped? " · "+skipped+" row(s) skipped (missing store, period or a number)":"")+". The demo data has been replaced.", false);
+}
+function exportScorecard(){
+  var head=["Store","Region","Period","Target ($)","Actual ($)","Attainment %"];
+  if(HAS_TRAFFIC) head.push("Traffic vs LY %");
+  if(HAS_CONV) head.push("Conversion %");
+  if(HAS_BASKET) head.push("Avg basket ($)");
+  if(HAS_SQFT) head.push("Sales per sq ft ($)");
+  head.push("Status");
+  var lines=[head.map(csvCell).join(",")];
+  viewList().forEach(function(s){
+    var d=pd(s), att=attOf(s);
+    var row=[s.name, s.region, state.period, d? Math.round(d.target*1000):"", d? Math.round(d.actual*1000):"", att==null?"":att.toFixed(1)];
+    if(HAS_TRAFFIC) row.push(d&&d.traffic!=null? d.traffic:"");
+    if(HAS_CONV) row.push(d&&d.conv!=null? d.conv:"");
+    if(HAS_BASKET) row.push(d&&d.basket!=null? Math.round(d.basket):"");
+    if(HAS_SQFT){ var v=spsfOf(s); row.push(v==null?"": parseFloat(v.toFixed(2))); }
+    row.push(statusOf(att)[0]);
+    lines.push(row.map(csvCell).join(","));
+  });
+  downloadFile("store-scorecard-"+state.period+".csv", lines.join("\n")+"\n");
+}
+
+// ---- Events ----
+document.getElementById("periodSeg").addEventListener("click",function(e){ if(e.target.tagName!=="BUTTON")return; state.period=e.target.getAttribute("data-p"); renderAll(); });
+document.getElementById("regionPills").addEventListener("click",function(e){ if(e.target.tagName!=="BUTTON")return; state.region=e.target.getAttribute("data-r"); renderAll(); });
+document.getElementById("search").addEventListener("input",function(e){ state.query=e.target.value; renderTable(); });
+document.getElementById("thead").addEventListener("click",function(e){ var th=e.target.closest? e.target.closest("th[data-sort]") : null; if(!th) return; var k=th.getAttribute("data-sort"); if(state.sort===k) state.sortDir*=-1; else { state.sort=k; state.sortDir= k==="name"?1:-1; } renderTable(); });
+document.getElementById("uploadBtn").addEventListener("click",function(){ document.getElementById("fileInput").click(); });
+document.getElementById("fileInput").addEventListener("change",function(e){
+  var f=e.target.files && e.target.files[0];
+  e.target.value="";
+  if(!f) return;
+  var reader=new FileReader();
+  reader.onload=function(){ handleUpload(String(reader.result||""), f.name); };
+  reader.onerror=function(){ setStatus("Couldn’t read that file — try again with a .csv file.", true); };
+  reader.readAsText(f);
+});
+document.getElementById("templateBtn").addEventListener("click",function(){
+  downloadFile("store-data-template.csv",
+    "store,region,period,actual,target,traffic,conversion,basket,sqft\n"+
+    "Downtown Flagship,Central,Q3,512400,540000,-2.5,19.8,74,6800\n"+
+    "Riverside Mall,Central,Q3,388250,360000,1.8,21.2,79,5200\n");
+});
+document.getElementById("exportBtn").addEventListener("click",exportScorecard);
+document.getElementById("resetBtn").addEventListener("click",function(){
+  loadDemo();
+  state.period="Q3"; state.region="All"; state.sort="att"; state.sortDir=1; state.selected=4; state.query="";
+  document.getElementById("search").value="";
+  document.getElementById("subtitle").innerHTML='Actual vs. target, decomposed into traffic, conversion and basket — so you can see not just <em>which</em> stores are missing, but <em>why</em>. Demo dataset: 24 stores, FY 2026.';
+  document.getElementById("dataNote").textContent="All figures are a fictional demo dataset for portfolio purposes.";
+  document.getElementById("resetBtn").style.display="none";
+  setStatus("Demo data restored — 24 stores. Upload a CSV any time to replace it again.", false);
+  renderAll();
+});
+
+loadDemo();
+renderAll();
+</script>
+</body>
+</html>
