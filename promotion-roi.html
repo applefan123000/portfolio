@@ -581,6 +581,7 @@
       if (cur.length > 1 || cur[0] !== "") rows.push(cur);
       return rows;
     }
+    function csvCell(v) { v=String(v == null ? "" : v); return /[",\r\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
     function downloadCSV(name, text) {
       const blob = new Blob([text], {type: "text/csv"});
       const a = document.createElement("a");
@@ -605,20 +606,21 @@
           const need = ["product", "price", "cost", "baseline_units"];
           const missing = need.filter(n => idx(n) < 0);
           if (missing.length) throw new Error("Missing required column(s): " + missing.join(", ") + ". Download the template to see the expected format.");
-          const out = [];
+          const out = []; let skipped = 0;
+          const csvNum = v => { const s=String(v == null ? "" : v).trim().replace(/[$,\s]/g,""); return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(s) && Number.isFinite(Number(s)) ? Number(s) : null; };
           for (let i = 1; i < rows.length; i++) {
-            const r = rows[i];
-            const price = num(r[idx("price")]), cost = num(r[idx("cost")]), units = num(r[idx("baseline_units")]);
-            if (!r[idx("product")] || !(price > 0) || !(units > 0)) continue;
-            out.push({
-              product: String(r[idx("product")]).trim(), price, cost, units,
-              elas: idx("elasticity") >= 0 && String(r[idx("elasticity")]).trim() !== "" ? clamp(num(r[idx("elasticity")], -2), -8, -0.05) : null,
-              fixed: idx("fixed_cost") >= 0 ? Math.max(0, num(r[idx("fixed_cost")])) : 0
-            });
+            const r = rows[i], product=String(r[idx("product")] || "").trim();
+            const price=csvNum(r[idx("price")]), cost=csvNum(r[idx("cost")]), units=csvNum(r[idx("baseline_units")]);
+            const eText=idx("elasticity") >= 0 ? String(r[idx("elasticity")] || "").trim() : "";
+            const fText=idx("fixed_cost") >= 0 ? String(r[idx("fixed_cost")] || "").trim() : "";
+            const elas=eText ? csvNum(eText) : null, fixed=fText ? csvNum(fText) : 0;
+            if(!product || price===null || price<=0 || cost===null || cost<0 || units===null || units<=0 ||
+               (eText && (elas===null || elas < -8 || elas > -0.05)) || fixed===null || fixed<0){skipped++;continue;}
+            out.push({product,price,cost,units,elas,fixed});
           }
-          if (!out.length) throw new Error("No valid product rows found — check that price and baseline_units are numbers above 0.");
+          if (!out.length) throw new Error("No valid product rows found — price and units must be positive, cost and fixed cost nonnegative, and elasticity between -8 and -0.05.");
           batchData = out;
-          batchMsg("ok", "Loaded " + out.length + " product(s) from " + f.name + ". The table below now runs on your data.");
+          batchMsg("ok", "Loaded " + out.length + " product(s) from " + f.name + (skipped ? "; skipped " + skipped + " invalid row(s)" : "") + ". The table below now runs on your data.");
           renderAll();
         } catch (err) {
           batchMsg("err", err.message);
@@ -643,10 +645,10 @@
       let csv = "product,price,cost,baseline_units_per_week,elasticity,discount_pct,weeks,fixed_cost,promo_units_per_week,lift_pct,baseline_profit,promo_profit,incremental_profit,roi_pct,verdict\n";
       batchRows.forEach(({row, r}) => {
         const v = verdictOf(r);
-        csv += [JSON.stringify(row.product), row.price.toFixed(2), row.cost.toFixed(2), row.units,
+        csv += [csvCell(row.product), row.price.toFixed(2), row.cost.toFixed(2), row.units,
           (row.elas != null ? row.elas : getProduct().elas).toFixed(2), Math.round(s.discount * 100), s.weeks, (row.fixed || 0).toFixed(2),
           Math.round(r.q1), (r.lift * 100).toFixed(1), Math.round(r.baseProfit), Math.round(r.promoProfit), Math.round(r.incremental),
-          isFinite(r.roi) ? (r.roi * 100).toFixed(1) : "", JSON.stringify(v.txt)].join(",") + "\n";
+          isFinite(r.roi) ? (r.roi * 100).toFixed(1) : "", csvCell(v.txt)].join(",") + "\n";
       });
       downloadCSV("promotion_roi_results_scenario_" + key.toLowerCase() + ".csv", csv);
     });

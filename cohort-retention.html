@@ -310,7 +310,7 @@
               <li><code>months_since_signup</code> — 0 for the signup month, 1 for the month after, and so on</li>
               <li><code>active_users</code> — how many of that cohort were active in that month</li>
             </ul>
-            <p style="margin-top:10px">A wide layout works too: <code>cohort_month, cohort_size, m0, m1, m2, …</code> with active-user counts across the row. Either way, the month-0 count defines the cohort size, and every later month is divided by it.</p>
+            <p style="margin-top:10px">A wide layout works too: <code>cohort_month, cohort_size, m0, m1, m2, …</code> with active-user counts across the row. Either way, the month-0 count defines the cohort size. Provide consecutive periods from M0; missing periods are not assumed to be zero.</p>
             <h3 style="margin-top:16px">How to build this from raw events</h3>
             <p>In SQL or a spreadsheet: take each user's first-seen month as their cohort, then for every later month count distinct users from that cohort who show any activity. One row per cohort × month is the whole input.</p>
           </div>
@@ -451,7 +451,7 @@
       var first3 = groupM1(withM1All.slice(0, 3));
       var last3 = groupM1(withM1All.slice(-3));
       var trendHtml = "";
-      if (first3 != null && last3 != null) {
+      if (withM1All.length >= 6 && first3 != null && last3 != null) {
         var d = last3 - first3;
         var cls = d >= 0 ? "up" : "down";
         var arrow = d >= 0 ? "▲" : "▼";
@@ -783,7 +783,7 @@
     function parseMonthLabel(raw) {
       var s = String(raw).trim();
       var m1 = s.match(/^(\d{4})[-\/](\d{1,2})/);
-      if (m1) return { key: m1[1] + "-" + ("0" + (+m1[2])).slice(-2), label: monthLabel(+m1[1], +m1[2]) };
+      if (m1 && +m1[2]>=1 && +m1[2]<=12) return { key: m1[1] + "-" + ("0" + (+m1[2])).slice(-2), label: monthLabel(+m1[1], +m1[2]) };
       var names = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
       var m2 = s.toLowerCase().match(/([a-z]{3})[a-z]*\s+(\d{4})/);
       if (m2) { var mi = names.indexOf(m2[1]) + 1; if (mi > 0) return { key: m2[2] + "-" + ("0" + mi).slice(-2), label: monthLabel(+m2[2], mi) }; }
@@ -791,56 +791,47 @@
     }
 
     function cohortsFromRows(rows) {
-      if (rows.length < 2) throw new Error("The file has no data rows under the header.");
-      var headers = rows[0].map(normHeader);
-      var ci = headers.findIndex(function (h) { return h === "cohort_month" || h === "cohort" || h === "month" || h === "signup_month"; });
-      if (ci < 0) throw new Error("Missing a cohort column — expected a header like cohort_month.");
-      var pi = headers.findIndex(function (h) { return h === "months_since_signup" || h === "period" || h === "month_index" || h === "period_index" || h === "months"; });
-      var ui = headers.findIndex(function (h) { return h === "active_users" || h === "users" || h === "retained_users" || h === "retained" || h === "count"; });
-
-      var byKey = {};
-      function getCohort(rawMonth) {
-        var pm = parseMonthLabel(rawMonth);
-        if (!pm) throw new Error("Could not read cohort month '" + rawMonth + "' — use YYYY-MM (e.g. 2025-03).");
-        if (!byKey[pm.key]) byKey[pm.key] = { key: pm.key, label: pm.label, size: 0, cells: {} };
-        return byKey[pm.key];
+      if(rows.length<2)throw new Error("The file has no data rows under the header.");
+      var headers=rows[0].map(normHeader);
+      var ci=headers.findIndex(function(h){return h==="cohort_month"||h==="cohort"||h==="month"||h==="signup_month";});
+      if(ci<0)throw new Error("Missing a cohort column — expected cohort_month.");
+      var pi=headers.findIndex(function(h){return h==="months_since_signup"||h==="period"||h==="month_index"||h==="period_index"||h==="months";});
+      var ui=headers.findIndex(function(h){return h==="active_users"||h==="users"||h==="retained_users"||h==="retained"||h==="count";});
+      var byKey=Object.create(null);
+      function getCohort(raw){var pm=parseMonthLabel(raw);if(!pm)throw new Error("Could not read cohort month '"+raw+"' — use YYYY-MM.");if(!byKey[pm.key])byKey[pm.key]={key:pm.key,label:pm.label,cells:Object.create(null)};return byKey[pm.key];}
+      function put(c,p,raw,rowNo){
+        var text=String(raw==null?"":raw).trim().replace(/,/g,"");
+        if(!/^\d+$/.test(text)||!Number.isSafeInteger(Number(text)))throw new Error("Invalid active_users on row "+rowNo+"; use a nonnegative whole number.");
+        if(!Number.isInteger(p)||p<0||p>1200)throw new Error("Invalid month index on row "+rowNo+".");
+        if(Object.prototype.hasOwnProperty.call(c.cells,p))throw new Error("Duplicate period M"+p+" for cohort "+c.key+".");
+        c.cells[p]=Number(text);
       }
-      var r, j;
-      if (pi >= 0 && ui >= 0) {
-        /* long format */
-        for (r = 1; r < rows.length; r++) {
-          var c = getCohort(rows[r][ci]);
-          var p = parseInt(String(rows[r][pi]).replace(/[^0-9]/g, ""), 10);
-          var u = parseFloat(String(rows[r][ui]).replace(/[^0-9.]/g, ""));
-          if (isNaN(p) || isNaN(u)) continue;
-          c.cells[p] = u;
-        }
-      } else {
-        /* wide format: period columns named 0,1,2… or m0,m1,m2… */
-        var periodCols = [];
-        headers.forEach(function (h, idx) {
-          var mm = h.match(/^m?(\d+)$/);
-          if (mm && idx !== ci) periodCols.push({ idx: idx, p: +mm[1] });
-        });
-        if (!periodCols.length) throw new Error("Could not find period columns. Use the long format (cohort_month, months_since_signup, active_users) or wide columns m0, m1, m2…");
-        for (r = 1; r < rows.length; r++) {
-          var c2 = getCohort(rows[r][ci]);
-          periodCols.forEach(function (pc) {
-            var u2 = parseFloat(String(rows[r][pc.idx] == null ? "" : rows[r][pc.idx]).replace(/[^0-9.]/g, ""));
-            if (!isNaN(u2)) c2.cells[pc.p] = u2;
-          });
-        }
+      var periodCols=[];
+      if(!(pi>=0&&ui>=0)){
+        headers.forEach(function(h,idx){var mm=h.match(/^m?(\d+)$/);if(mm&&idx!==ci)periodCols.push({idx:idx,p:+mm[1]});});
+        if(!periodCols.length)throw new Error("Could not find period columns. Use cohort_month, months_since_signup, active_users or m0, m1, m2…");
       }
-      var cohorts = Object.keys(byKey).sort().map(function (k) {
-        var c = byKey[k];
-        var maxP = Math.max.apply(null, Object.keys(c.cells).map(Number).concat([0]));
-        var retained = [];
-        for (var p = 0; p <= maxP; p++) retained.push(c.cells[p] != null ? Math.round(c.cells[p]) : 0);
-        /* if month 0 is missing but a size column exists, month 0 = max cell */
-        if (!c.cells[0]) retained[0] = Math.max.apply(null, retained);
-        return { key: c.key, label: c.label, size: retained[0], retained: retained };
-      }).filter(function (c) { return c.size > 0; });
-      if (!cohorts.length) throw new Error("No usable cohorts found — check that month-0 rows have positive user counts.");
+      for(var r=1;r<rows.length;r++){
+        if(rows[r].length===1&&String(rows[r][0]).trim().startsWith("#"))continue;
+        var c=getCohort(rows[r][ci]);
+        if(pi>=0&&ui>=0){
+          var period=String(rows[r][pi]==null?"":rows[r][pi]).trim(),match=period.match(/^m?(\d+)$/i);
+          if(!match)throw new Error("Invalid month index on row "+(r+1)+".");
+          put(c,+match[1],rows[r][ui],r+1);
+        }else periodCols.forEach(function(pc){var v=rows[r][pc.idx];if(v!=null&&String(v).trim()!=="")put(c,pc.p,v,r+1);});
+      }
+      var cohorts=Object.keys(byKey).sort().map(function(k){
+        var c=byKey[k], periods=Object.keys(c.cells).map(Number);
+        if(!Object.prototype.hasOwnProperty.call(c.cells,0)||c.cells[0]<=0)throw new Error("Cohort "+k+" needs a positive M0 count to define its size.");
+        var maxP=Math.max.apply(null,periods), retained=[];
+        for(var p=0;p<=maxP;p++){
+          if(!Object.prototype.hasOwnProperty.call(c.cells,p))throw new Error("Cohort "+k+" is missing M"+p+". Supply consecutive periods starting at M0.");
+          if(c.cells[p]>c.cells[0])throw new Error("Cohort "+k+" has more active users at M"+p+" than its M0 size.");
+          retained.push(c.cells[p]);
+        }
+        return {key:c.key,label:c.label,size:retained[0],retained:retained};
+      });
+      if(!cohorts.length)throw new Error("No usable cohorts found.");
       return cohorts;
     }
 
@@ -893,7 +884,6 @@
           lines.push(e[0] + "," + p + "," + Math.round(size * r));
         }
       });
-      lines.push("# Replace these example rows with your own: one row per cohort per month.");
       download("cohort-retention-template.csv", lines.join("\n"));
     });
     $("btnExport").addEventListener("click", function () {

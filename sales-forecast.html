@@ -130,7 +130,7 @@ footer{color:var(--muted);font-size:13px;margin-top:22px;max-width:820px}
 
       <h3>Your data</h3>
       <div class="drop" id="dropZone">Drop a CSV here, or click Upload above.<br>Columns: <span class="mono">month, sales</span></div>
-      <p class="hint" style="margin-top:10px">Month as <span class="mono">2025-01</span> or <span class="mono">2025-01-01</span>. At least 13 months needed for seasonality; 24+ recommended.</p>
+      <p class="hint" style="margin-top:10px">Use consecutive months in <span class="mono">2025-01</span> or <span class="mono">2025-01-01</span> format with positive sales. At least 6 months are required; 13+ for seasonality and 24+ are recommended.</p>
     </aside>
 
     <main>
@@ -204,6 +204,7 @@ function sd(a){ var m=mean(a); return Math.sqrt(mean(a.map(function(x){return (x
 // ---------- Forecasting methods ----------
 // Each returns {point:[...h], sigma} trained on `train` (array of sales), forecasting from last key.
 function seasonalIndices(train, keys){
+  if(train.length<13){var flat={};for(var month=1;month<=12;month++)flat[month]=1;return flat;}
   var byMonth={}; train.forEach(function(v,i){ var m=parseKey(keys[i]).m; (byMonth[m]=byMonth[m]||[]).push(v); });
   var overall=mean(train), idx={};
   for(var m=1;m<=12;m++){ idx[m]= byMonth[m]&&byMonth[m].length ? mean(byMonth[m])/overall : 1; }
@@ -229,7 +230,7 @@ function fitHoltWinters(train, keys){
   var alphas=[0.2,0.4,0.6,0.8], betas=[0.05,0.15,0.3], gammas=[0.1,0.3,0.5];
   function run(a,b,g){
     var L=train[0], T=(train[Math.min(11,train.length-1)]-train[0])/Math.min(11,train.length-1);
-    var S=[]; for(var i=0;i<seasonLen;i++) S.push(hasSeason?idx[i%12+1]:1);
+    var S=[],firstMonth=parseKey(keys[0]).m; for(var i=0;i<seasonLen;i++) S.push(hasSeason?idx[(firstMonth-1+i)%12+1]:1);
     var sse=0,cnt=0;
     for(var t=1;t<train.length;t++){
       var s=S[t%seasonLen];
@@ -252,7 +253,7 @@ function fitHoltWinters(train, keys){
 function fitNaive(train, keys){
   var n=train.length;
   var recent=train.slice(-12), prior=train.slice(-24,-12);
-  var growth= prior.length===12 ? mean(recent)/mean(prior) : 1.05;
+  var growth= prior.length===12 ? mean(recent)/mean(prior) : 1;
   var resid=[];
   for(var i=12;i<n;i++){ var p=train[i-12]*(i>=24? mean(train.slice(i-11,i+1))/ (mean(train.slice(i-23,i-11))||1) : 1); resid.push(train[i]-train[i-12]*growth); }
   return {sigma: resid.length?sd(resid):sd(train)*0.08, growth:growth,
@@ -303,6 +304,9 @@ function compute(){
 
 // ---------- Rendering ----------
 function render(){
+  var methodSel=document.getElementById("methodSel"), naiveOption=methodSel.querySelector('option[value="naive"]');
+  naiveOption.disabled=state.data.length<12;
+  if(naiveOption.disabled && state.method==="naive"){state.method="auto";methodSel.value="auto";}
   var c=compute(), fc=c.fc, data=state.data;
   document.getElementById("dataBadge").textContent=(state.isSample?"Sample data · ":"Your data · ")+data.length+" months · "+label(data[0].key)+" – "+label(data[data.length-1].key);
   document.getElementById("methodBadge").textContent=METHODS[c.chosen].name+(state.method==="auto"?" (auto)":"");
@@ -382,6 +386,7 @@ function drawInsights(c,total){
   document.getElementById("insights").innerHTML=cards.map(function(x){ return '<div class="insight"><b>'+x.t+'</b><span>'+x.s+'</span></div>'; }).join("");
 }
 function seasonalText(){
+  if(state.data.length<13)return 'At least 13 consecutive months are needed to estimate seasonality.';
   var keys=state.data.map(function(d){return d.key;}), vals=state.data.map(function(d){return d.sales;});
   var idx=seasonalIndices(vals,keys);
   var hi={m:1,v:0}, lo={m:1,v:9};
@@ -406,24 +411,38 @@ function showMsg(text, ok){
   var m=document.getElementById("msg"); m.textContent=text; m.className="msg "+(ok?"ok":"err");
 }
 function parseCSV(text){
-  var lines=text.replace(/\r/g,"").split("\n").filter(function(l){return l.trim();});
-  if(lines.length<2) throw new Error("File looks empty — expected a header row plus monthly rows.");
-  var head=lines[0].toLowerCase().split(",").map(function(x){return x.trim();});
+  text=String(text).replace(/^\uFEFF/,"");
+  var rows=[],row=[],field="",quoted=false;
+  for(var i=0;i<text.length;i++){
+    var c=text[i];
+    if(quoted){if(c==='"'){if(text[i+1]==='"'){field+='"';i++;}else quoted=false;}else field+=c;}
+    else if(c==='"')quoted=true;
+    else if(c===","){row.push(field);field="";}
+    else if(c==="\n"||c==="\r"){if(c==="\r"&&text[i+1]==="\n")i++;row.push(field);if(row.some(function(v){return v.trim();}))rows.push(row);row=[];field="";}
+    else field+=c;
+  }
+  if(quoted)throw new Error("The CSV contains an unclosed quoted field.");
+  row.push(field);if(row.some(function(v){return v.trim();}))rows.push(row);
+  if(rows.length<2)throw new Error("File looks empty — expected a header row plus monthly rows.");
+  var head=rows[0].map(function(h){return h.trim().toLowerCase();});
   var mi=head.findIndex(function(h){return /month|date|period/.test(h);});
   var si=head.findIndex(function(h){return /sales|revenue|amount|value/.test(h);});
-  if(mi<0||si<0) throw new Error("Could not find the required columns. Header must include month and sales — download the template to see the exact format.");
-  var out=[];
-  for(var i=1;i<lines.length;i++){
-    var cells=lines[i].split(",");
-    var raw=(cells[mi]||"").trim(), val=parseFloat((cells[si]||"").replace(/[$,\s"]/g,""));
-    var mm=raw.match(/(\d{4})[-/](\d{1,2})/);
-    if(!mm||isNaN(val)) continue;
-    out.push({key:mm[1]+"-"+String(+mm[2]).padStart(2,"0"), sales:val});
+  if(mi<0||si<0)throw new Error("Could not find the required columns. Header must include month and sales.");
+  var out=[],seen=Object.create(null);
+  for(var j=1;j<rows.length;j++){
+    var raw=String(rows[j][mi]||"").trim(), m=raw.match(/^(\d{4})[-/](\d{1,2})(?:[-/](\d{1,2}))?$/);
+    var year=m?+m[1]:0,month=m?+m[2]:0,day=m&&m[3]?+m[3]:1;
+    if(!m||year<100||month<1||month>12||day<1||day>new Date(Date.UTC(year,month,0)).getUTCDate())throw new Error("Invalid month on row "+(j+1)+". Use YYYY-MM or YYYY-MM-DD.");
+    var rawVal=String(rows[j][si]||"").trim().replace(/[$,\s]/g,"");
+    if(!/^[+]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(rawVal)||!isFinite(Number(rawVal))||Number(rawVal)<=0)throw new Error("Row "+(j+1)+" needs a positive numeric sales value for the percentage-based forecast.");
+    var key=year+"-"+String(month).padStart(2,"0");
+    if(seen[key])throw new Error("Duplicate month "+key+". Provide one row per month.");
+    seen[key]=true;out.push({key:key,sales:Number(rawVal)});
   }
-  out.sort(function(a,b){return a.key<b.key?-1:1;});
-  var dedup=[]; out.forEach(function(r){ if(dedup.length&&dedup[dedup.length-1].key===r.key) dedup[dedup.length-1]=r; else dedup.push(r); });
-  if(dedup.length<6) throw new Error("Only "+dedup.length+" usable monthly rows found — at least 6 are needed (13+ for seasonality).");
-  return dedup;
+  out.sort(function(a,b){return a.key.localeCompare(b.key);});
+  if(out.length<6)throw new Error("Only "+out.length+" usable monthly rows found — at least 6 are needed.");
+  for(var k=1;k<out.length;k++)if(addMonths(out[k-1].key,1).key!==out[k].key)throw new Error("Missing month after "+out[k-1].key+". Supply consecutive monthly data.");
+  return out;
 }
 function handleFile(file){
   if(!file) return;
@@ -449,7 +468,7 @@ dz.addEventListener("click",function(){ document.getElementById("fileInput").cli
 ["dragleave","drop"].forEach(function(ev){ dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.remove("over");}); });
 dz.addEventListener("drop",function(e){ handleFile(e.dataTransfer.files[0]); });
 document.getElementById("tplBtn").addEventListener("click",function(){
-  download("sales-forecast-template.csv","month,sales\n2025-01,182400\n2025-02,171900\n2025-03,196300\n");
+  download("sales-forecast-template.csv","month,sales\n"+SAMPLE.slice(0,13).map(function(r){return r.join(",");}).join("\n")+"\n");
 });
 document.getElementById("resetBtn").addEventListener("click",function(){
   state.data=SAMPLE.map(function(r){return{key:r[0],sales:r[1]};}); state.isSample=true; render();

@@ -157,7 +157,7 @@ svg text{font-family:"IBM Plex Mono",monospace}
     <div id="detailArea"></div>
   </div>
 
-  <p class="footer">Method: Sales = Traffic × Conversion × Average basket. Each driver’s contribution is isolated by holding the other two at plan, so the three effects sum to the total variance (small interaction residual allocated pro-rata). Diagnosis rules flag the dominant negative driver per store. <span id="dataNote">All figures are a fictional demo dataset for portfolio purposes.</span></p>
+  <p class="footer">Method: Sales = Traffic × Conversion × Average basket. For the demo, estimated driver effects are scaled to match total variance; for uploads, missing effects are grouped as a residual. These are diagnostic estimates, not causal proof. <span id="dataNote">All figures are a fictional demo dataset for portfolio purposes.</span></p>
   <p class="byline">Designed &amp; built by Fan (David) Xu.</p>
 </div>
 
@@ -223,7 +223,8 @@ function filtered(){
 function allInRegion(){
   return STORES.filter(function(s){ return state.region==="All"||s.region===state.region; });
 }
-function fmtK(k){ return "$"+k.toLocaleString()+"k"; }
+function escHtml(s){ return String(s == null ? "" : s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function fmtK(k){ return "$"+k.toLocaleString("en-US",{maximumFractionDigits:3})+"k"; }
 function pct(x,d){ return (x>=0?"+":"")+x.toFixed(d==null?1:d)+"%"; }
 function fmtSPSF(v){ return "$"+(v>=100? Math.round(v).toLocaleString() : v.toFixed(1)); }
 function spsfOf(s){ var d=pd(s); if(!d||!s.sqft) return null; return d.actual*1000/s.sqft; }
@@ -295,10 +296,10 @@ function diagnosis(s){
 
 function renderControls(){
   var seg="";
-  PERIOD_LIST.forEach(function(p){ seg+='<button data-p="'+p+'"'+(state.period===p?' class="active"':"")+">"+p+"</button>"; });
+  PERIOD_LIST.forEach(function(p){ seg+='<button data-p="'+escHtml(p)+'"'+(state.period===p?' class="active"':"")+">"+escHtml(p)+"</button>"; });
   document.getElementById("periodSeg").innerHTML=seg;
   var pills='<button class="pill'+(state.region==="All"?" active":"")+'" data-r="All">All regions</button>';
-  distinctRegions().forEach(function(r){ pills+='<button class="pill'+(state.region===r?" active":"")+'" data-r="'+r+'">'+(REGION_LABELS[r]||r)+"</button>"; });
+  distinctRegions().forEach(function(r){ pills+='<button class="pill'+(state.region===r?" active":"")+'" data-r="'+escHtml(r)+'">'+escHtml(REGION_LABELS[r]||r)+"</button>"; });
   document.getElementById("regionPills").innerHTML=pills;
   document.getElementById("spsfNote").style.display= HAS_SQFT? "block":"none";
 }
@@ -310,16 +311,16 @@ function renderKPIs(){
   var onTarget=list.filter(function(s){return attOf(s)>=100}).length;
   var sorted=list.slice().sort(function(a,b){return attOf(a)-attOf(b)});
   var worst=sorted[0], best=sorted[sorted.length-1];
-  var dragHtml= worst? '<div class="kpi"><label>Biggest drag / leader</label><div class="val" style="font-size:19px;line-height:1.2;margin-top:8px">'+worst.name+' <span class="down mono" style="font-size:14px">'+attOf(worst).toFixed(1)+'%</span></div><p>Leader: '+best.name+' · '+attOf(best).toFixed(1)+'% of target</p></div>'
+  var dragHtml= worst? '<div class="kpi"><label>Biggest drag / leader</label><div class="val" style="font-size:19px;line-height:1.2;margin-top:8px">'+escHtml(worst.name)+' <span class="down mono" style="font-size:14px">'+attOf(worst).toFixed(1)+'%</span></div><p>Leader: '+escHtml(best.name)+' · '+attOf(best).toFixed(1)+'% of target</p></div>'
                      : '<div class="kpi"><label>Biggest drag / leader</label><div class="val" style="font-size:19px;line-height:1.2;margin-top:8px">—</div><p>No stores in view for this period.</p></div>';
   document.getElementById("kpis").innerHTML=
-   kpi("Net sales — "+periodLabel(), fmtK(Math.round(d.actual)), (att-100), "vs target of "+fmtK(Math.round(d.target)))+
+   kpi("Net sales — "+periodLabel(), fmtK(d.actual), (att-100), "vs target of "+fmtK(d.target))+
    kpi("Target attainment", att.toFixed(1)+"%", att-100, list.length+" stores in view")+
    kpi("Stores on target", onTarget+" / "+list.length, null, onTarget===list.length?"Every store at or above plan":(list.length-onTarget)+" stores below plan")+
    dragHtml;
   function kpi(label,val,delta,note){
     var dHtml= delta==null? "" : '<span class="delta '+(delta>=0?"up":"down")+'">'+(delta>=0?"▲ ":"▼ ")+Math.abs(delta).toFixed(1)+"% vs target</span>";
-    return '<div class="kpi"><label>'+label+'</label><div class="val">'+val+'</div>'+dHtml+'<p>'+note+'</p></div>';
+    return '<div class="kpi"><label>'+escHtml(label)+'</label><div class="val">'+val+'</div>'+dHtml+'<p>'+note+'</p></div>';
   }
 }
 
@@ -343,7 +344,7 @@ function renderWaterfall(){
     else{ var start=cum; cum+=st.val; top=y(Math.max(start,cum)); bot=y(Math.min(start,cum)); color= st.val>=0? "var(--green)":"var(--red)"; }
     var h=Math.max(3,bot-top);
     svg+='<rect x="'+x+'" y="'+top+'" width="'+bw+'" height="'+h+'" rx="5" fill="'+color+'" opacity="'+(st.type==="total"?1:.88)+'"/>';
-    var labelVal= st.type==="total"? fmtK(Math.round(st.val)) : (st.val>=0?"+":"−")+ "$"+Math.abs(Math.round(st.val))+"k";
+    var labelVal= st.type==="total"? fmtK(st.val) : (st.val>=0?"+":"−")+fmtK(Math.abs(st.val));
     svg+='<text x="'+(x+bw/2)+'" y="'+(top-7)+'" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">'+labelVal+'</text>';
     svg+='<text x="'+(x+bw/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" fill="var(--ink2)">'+st.label+'</text>';
     if(i>0 && st.type==="delta"){ var prevX=padL+(i-1)*stepX+bw; svg+='<line x1="'+prevX+'" x2="'+x+'" y1="'+y(cum-st.val)+'" y2="'+y(cum-st.val)+'" stroke="var(--line2)" stroke-dasharray="3 3"/>'; }
@@ -351,7 +352,7 @@ function renderWaterfall(){
   svg+='</svg>';
   document.getElementById("waterfall").innerHTML=svg;
   var mainEff=d.effects.slice().sort(function(a,b){return Math.abs(b.val)-Math.abs(a.val)})[0];
-  document.getElementById("bridgeHint").textContent="For "+(state.region==="All"?"all regions":state.region)+" in "+periodLabel()+", the "+fmtK(Math.abs(Math.round(d.totalVar)))+" "+(d.totalVar>=0?"surplus":"shortfall")+" is driven mainly by "+(mainEff? mainEff.label.toLowerCase():"—")+".";
+  document.getElementById("bridgeHint").textContent="For "+(state.region==="All"?"all regions":state.region)+" in "+periodLabel()+", the "+fmtK(Math.abs(d.totalVar))+" "+(d.totalVar>=0?"surplus":"shortfall")+" is driven mainly by "+(mainEff? mainEff.label.toLowerCase():"—")+".";
 }
 
 function renderRegions(){
@@ -361,11 +362,10 @@ function renderRegions(){
     var list=STORES.filter(function(s){return s.region===r});
     var t=0,a=0;
     list.forEach(function(s){ var d=pd(s); if(d){ t+=d.target; a+=d.actual; } });
-    t=Math.round(t); a=Math.round(a);
     var att= t? a/t*100:0; var w=Math.min(100,att);
     var color= att>=100? "var(--green)" : att>=92? "var(--amber)":"var(--red)";
     stats.push({r:r,t:t,varr:a-t,att:att});
-    html+='<div style="margin-bottom:13px"><div style="display:flex;justify-content:space-between;font-size:13px"><strong>'+r+'</strong><span class="mono" style="color:var(--ink2)">'+att.toFixed(1)+'% · '+fmtK(a)+' / '+fmtK(t)+'</span></div><div class="bar" style="margin-top:6px;position:relative"><i style="width:'+w+'%;background:'+color+'"></i></div></div>';
+    html+='<div style="margin-bottom:13px"><div style="display:flex;justify-content:space-between;font-size:13px"><strong>'+escHtml(r)+'</strong><span class="mono" style="color:var(--ink2)">'+att.toFixed(1)+'% · '+fmtK(a)+' / '+fmtK(t)+'</span></div><div class="bar" style="margin-top:6px;position:relative"><i style="width:'+w+'%;background:'+color+'"></i></div></div>';
   });
   var above=stats.filter(function(x){return x.att>=100});
   var drag=stats.slice().sort(function(a,b){return a.varr-b.varr})[0];
@@ -374,29 +374,29 @@ function renderRegions(){
   if(above.length===1) note+=" "+above[0].r+" is the only region above plan.";
   else if(above.length>1) note+=" Above plan: "+above.map(function(x){return x.r}).join(", ")+".";
   if(drag && drag.varr<0) note+=" "+drag.r+" is "+(largest&&drag.r===largest.r?"the largest region and ":"")+"the largest dollar drag.";
-  document.getElementById("regionChart").innerHTML=html+'<p class="hint">'+note+"</p>";
+  document.getElementById("regionChart").innerHTML=html+'<p class="hint">'+escHtml(note)+"</p>";
 }
 
 function renderInsight(){
   var list=allInRegion().filter(function(s){return pd(s)}).slice().sort(function(a,b){return attOf(a)-attOf(b)});
-  if(!list.length){ document.getElementById("insightBox").innerHTML='<h2 style="font-family:Libre Franklin;font-size:16px;margin:0">What needs attention</h2><p>No stores have data for '+periodLabel()+' in this view.</p>'; return; }
+  if(!list.length){ document.getElementById("insightBox").innerHTML='<h2 style="font-family:Libre Franklin;font-size:16px;margin:0">What needs attention</h2><p>No stores have data for '+escHtml(periodLabel())+' in this view.</p>'; return; }
   var worst=list[0], second=list[1]||list[0];
   var d=driversFor(allInRegion());
   var rec, recText;
   if(HAS_PLANS){
     var rec1=(pd(worst).conv/pd(worst).convPlan-1)*pd(worst).target;
     var rec2= second!==worst? (pd(second).conv/pd(second).convPlan-1)*pd(second).target : 0;
-    rec=Math.round(Math.abs(rec1+rec2));
+    rec=Math.abs(rec1+rec2);
     recText="Fixing conversion alone in the two weakest stores would recover roughly <strong>"+fmtK(rec)+"</strong> in the period.";
   } else {
     var chainAtt= d.target? d.actual/d.target*100 : 0;
     var short=0;
     var counted={};
     [worst,second].forEach(function(s){ if(counted[s.id])return; counted[s.id]=1; var dd=pd(s); short+=Math.max(0, chainAtt/100*dd.target-dd.actual); });
-    rec=Math.round(short);
+    rec=short;
     recText="Bringing the two weakest stores up to the chain-average attainment ("+chainAtt.toFixed(1)+"%) would recover roughly <strong>"+fmtK(rec)+"</strong> in the period.";
   }
-  document.getElementById("insightBox").innerHTML='<h2 style="font-family:Libre Franklin;font-size:16px;margin:0">What needs attention</h2><p><strong>'+worst.name+' ('+(worst.city||worst.region)+')</strong> is the biggest drag at <strong>'+attOf(worst).toFixed(1)+'%</strong> of target — diagnosed as a <strong>'+diagnosis(worst).title.toLowerCase()+'</strong>. <strong>'+second.name+'</strong> follows at '+attOf(second).toFixed(1)+'%. Together they account for a disproportionate share of the '+fmtK(Math.abs(Math.round(d.totalVar)))+' variance in this view. '+recText+'</p>';
+  document.getElementById("insightBox").innerHTML='<h2 style="font-family:Libre Franklin;font-size:16px;margin:0">What needs attention</h2><p><strong>'+escHtml(worst.name)+' ('+escHtml(worst.city||worst.region)+')</strong> is the biggest drag at <strong>'+attOf(worst).toFixed(1)+'%</strong> of target — diagnosed as a <strong>'+diagnosis(worst).title.toLowerCase()+'</strong>. <strong>'+escHtml(second.name)+'</strong> follows at '+attOf(second).toFixed(1)+'%. Review their individual target gaps alongside the overall variance of '+fmtK(Math.abs(d.totalVar))+'. '+recText+'</p>';
 }
 
 function scorecardColumns(){
@@ -449,9 +449,9 @@ function renderTable(){
     var color= att==null? "var(--ink3)" : att>=100? "var(--green)": att>=92? "var(--amber)":"var(--red)";
     html+='<tr class="row '+(state.selected===s.id?"selected":"")+'" data-id="'+s.id+'">';
     cols.forEach(function(c){
-      if(c.k==="name") html+='<td><strong>'+s.name+'</strong><div style="font-size:12px;color:var(--ink2)">'+(s.city? s.city+" · ":"")+s.region+"</div></td>";
+      if(c.k==="name") html+='<td><strong>'+escHtml(s.name)+'</strong><div style="font-size:12px;color:var(--ink2)">'+(s.city? escHtml(s.city)+" · ":"")+escHtml(s.region)+"</div></td>";
       else if(c.k==="att") html+= att==null? '<td class="mono">—</td>' : '<td><div style="display:flex;align-items:center;gap:8px"><span class="mono" style="font-weight:600">'+att.toFixed(1)+'%</span><span class="bar"><i style="width:'+Math.min(100,att)+'%;background:'+color+'"></i></span></div></td>';
-      else if(c.k==="sales") html+='<td class="mono">'+(d? fmtK(Math.round(d.actual)):"—")+"</td>";
+      else if(c.k==="sales") html+='<td class="mono">'+(d? fmtK(d.actual):"—")+"</td>";
       else if(c.k==="traffic") html+= (d&&d.traffic!=null)? '<td class="mono '+(d.traffic>=0?"up":"down")+'">'+pct(d.traffic)+"</td>" : '<td class="mono">—</td>';
       else if(c.k==="conv") html+= (d&&d.conv!=null)? '<td class="mono opt">'+d.conv.toFixed(1)+"%"+(HAS_PLANS&&d.convPlan!=null?' <span style="color:var(--ink3);font-size:12px">/ '+d.convPlan.toFixed(1)+"% plan</span>":"")+"</td>" : '<td class="mono opt">—</td>';
       else if(c.k==="atv") html+= (d&&d.basket!=null)? '<td class="mono opt">$'+Math.round(d.basket)+(HAS_PLANS&&d.basketPlan!=null?' <span style="color:var(--ink3);font-size:12px">/ $'+Math.round(d.basketPlan)+"</span>":"")+"</td>" : '<td class="mono opt">—</td>';
@@ -470,9 +470,9 @@ function renderDetail(){
   var s=STORES.find(function(x){return x.id===state.selected});
   if(!s){ document.getElementById("detailArea").innerHTML=""; return; }
   var d=pd(s);
-  if(!d){ document.getElementById("detailArea").innerHTML='<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:16px"><h3 style="font-family:Libre Franklin;font-size:17px">'+s.name+'</h3><p style="font-size:13px;color:var(--ink2)">No data for '+periodLabel()+' in the current dataset.</p></div>'; return; }
+  if(!d){ document.getElementById("detailArea").innerHTML='<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:16px"><h3 style="font-family:Libre Franklin;font-size:17px">'+escHtml(s.name)+'</h3><p style="font-size:13px;color:var(--ink2)">No data for '+escHtml(periodLabel())+' in the current dataset.</p></div>'; return; }
   var dg=diagnosis(s), att=attOf(s);
-  var pSales=Math.round(d.actual), pTarget=Math.round(d.target), pGap=pSales-pTarget;
+  var pSales=d.actual, pTarget=d.target, pGap=pSales-pTarget;
   var convHtml, basketHtml;
   if(d.conv==null){ convHtml='<div class="big">—</div><p style="font-size:12.5px;color:var(--ink2);margin:0">Not in dataset</p>'; }
   else if(HAS_PLANS && d.convPlan!=null){ var cf=(d.conv/d.convPlan-1)*100; convHtml='<div class="big">'+d.conv.toFixed(1)+'%</div><p style="font-size:12.5px;color:var(--ink2);margin:0">'+pct(cf)+' vs plan ('+d.convPlan.toFixed(1)+'%)</p>'; }
@@ -481,11 +481,11 @@ function renderDetail(){
   else if(HAS_PLANS && d.basketPlan!=null){ var af=(d.basket/d.basketPlan-1)*100; basketHtml='<div class="big">$'+Math.round(d.basket)+'</div><p style="font-size:12.5px;color:var(--ink2);margin:0">'+pct(af)+' vs plan ($'+Math.round(d.basketPlan)+')</p>'; }
   else { var b2=chainBench(); var af2= b2.basket? (d.basket/b2.basket-1)*100:0; basketHtml='<div class="big">$'+Math.round(d.basket)+'</div><p style="font-size:12.5px;color:var(--ink2);margin:0">'+pct(af2)+' vs chain avg'+(b2.basket?' ($'+Math.round(b2.basket)+')':"")+'</p>'; }
   var spsfHtml="";
-  if(HAS_SQFT && s.sqft){ var v=spsfOf(s); spsfHtml='<label style="display:block;margin-top:12px">Sales / sq ft — '+periodLabel()+'</label><div class="big">'+(v==null?"—":fmtSPSF(v))+'</div><p style="font-size:12.5px;color:var(--ink2);margin:0">Store size '+s.sqft.toLocaleString()+' sq ft — normalizes for store size so different-sized stores compare fairly.</p>'; }
-  document.getElementById("detailArea").innerHTML='<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:16px"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between"><h3 style="font-family:Libre Franklin;font-size:17px">'+s.name+' — '+(s.city||s.region)+' <span class="badge '+statusOf(att)[1]+'" style="margin-left:6px;vertical-align:middle">'+statusOf(att)[0]+'</span></h3><span class="mono" style="font-size:13px;color:var(--ink2)">'+(att==null?"—":att.toFixed(1)+'%')+' of target · '+fmtK(pSales)+' '+periodLabel()+' sales vs '+fmtK(pTarget)+' target</span></div>'+
+  if(HAS_SQFT && s.sqft){ var v=spsfOf(s); spsfHtml='<label style="display:block;margin-top:12px">Sales / sq ft — '+escHtml(periodLabel())+'</label><div class="big">'+(v==null?"—":fmtSPSF(v))+'</div><p style="font-size:12.5px;color:var(--ink2);margin:0">Store size '+s.sqft.toLocaleString()+' sq ft — normalizes for store size so different-sized stores compare fairly.</p>'; }
+  document.getElementById("detailArea").innerHTML='<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:16px"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between"><h3 style="font-family:Libre Franklin;font-size:17px">'+escHtml(s.name)+' — '+escHtml(s.city||s.region)+' <span class="badge '+statusOf(att)[1]+'" style="margin-left:6px;vertical-align:middle">'+statusOf(att)[0]+'</span></h3><span class="mono" style="font-size:13px;color:var(--ink2)">'+(att==null?"—":att.toFixed(1)+'%')+' of target · '+fmtK(pSales)+' '+escHtml(periodLabel())+' sales vs '+fmtK(pTarget)+' target</span></div>'+
   '<div class="detail"><div class="mini"><label>Diagnosis</label><div class="big" style="font-size:18px">'+dg.title+'</div><p style="font-size:13px;color:var(--ink2);line-height:1.55;margin:6px 0 0">'+dg.body+'</p></div>'+
   '<div class="mini"><label>Traffic</label><div class="big '+(d.traffic==null?"":(d.traffic>=0?"up":"down"))+'">'+(d.traffic==null?"—":pct(d.traffic))+'</div><p style="font-size:12.5px;color:var(--ink2);margin:0">Footfall vs last year</p><label style="display:block;margin-top:12px">Conversion</label>'+convHtml+'</div>'+
-  '<div class="mini"><label>Average basket</label>'+basketHtml+'<label style="display:block;margin-top:12px">Gap to target — '+periodLabel()+'</label><div class="big '+(pGap>=0?"up":"down")+'">'+(pGap>=0?"+":"−")+fmtK(Math.abs(pGap))+'</div><p style="font-size:12.5px;color:var(--ink2);margin:0">Period sales minus period target, same basis as the KPI cards above.</p>'+spsfHtml+'</div></div></div>';
+  '<div class="mini"><label>Average basket</label>'+basketHtml+'<label style="display:block;margin-top:12px">Gap to target — '+escHtml(periodLabel())+'</label><div class="big '+(pGap>=0?"up":"down")+'">'+(pGap>=0?"+":"−")+fmtK(Math.abs(pGap))+'</div><p style="font-size:12.5px;color:var(--ink2);margin:0">Period sales minus period target, same basis as the KPI cards above.</p>'+spsfHtml+'</div></div></div>';
 }
 
 function renderAll(){ renderControls(); renderKPIs(); renderWaterfall(); renderRegions(); renderInsight(); renderTable(); }
@@ -565,14 +565,13 @@ function handleUpload(text, fname){
     var region=String(cell(row,"region")||"").trim()||"Unspecified";
     var period=normPeriod(cell(row,"period"));
     var actual=parseNum(cell(row,"actual")), target=parseNum(cell(row,"target"));
-    if(!store||!period||actual==null||target==null){ skipped++; continue; }
+    if(!store||!period||actual==null||actual<0||target==null||target<=0){ skipped++; continue; }
     recs.push({store:store, region:region, period:period, actual:actual, target:target,
       traffic:parseNum(cell(row,"traffic")), conv:parseNum(cell(row,"conv")), basket:parseNum(cell(row,"basket")), sqft:parseNum(cell(row,"sqft"))});
   }
   if(!recs.length){ setStatus("No usable rows found — check that store, period, actual and target are filled in and the amounts are numbers. Your current data was kept.", true); return; }
-  var maxV=0; recs.forEach(function(rc){ maxV=Math.max(maxV, rc.actual, rc.target); });
-  var div= maxV>=10000? 1000:1; // amounts in dollars → $k; small values are taken as $k already
-  var map={}, order=[];
+  var div=1000; // CSV amounts are dollars; the dashboard displays thousands.
+  var map=Object.create(null), order=[];
   recs.forEach(function(rc){
     var st=map[rc.store];
     if(!st){ st={name:rc.store, city:"", region:rc.region, sqft:null, byPeriod:{}}; map[rc.store]=st; order.push(st); }
@@ -594,11 +593,11 @@ function handleUpload(text, fname){
   HAS_BASKET=recs.some(function(rc){return rc.basket!=null});
   HAS_SQFT=STORES.some(function(s){return !!s.sqft});
   DATASET={source:"upload", rows:recs.length, file:fname};
-  document.getElementById("subtitle").innerHTML="Actual vs. target for your uploaded dataset — "+STORES.length+" stores across "+distinctRegions().length+" region(s), periods "+PERIOD_LIST.join(", ")+". Every figure below is computed from the file you provided.";
+  document.getElementById("subtitle").textContent="Actual vs. target for your uploaded dataset — "+STORES.length+" stores across "+distinctRegions().length+" region(s), periods "+PERIOD_LIST.join(", ")+". Every figure below is computed from the file you provided.";
   document.getElementById("dataNote").textContent="Figures computed from the uploaded file “"+fname+"”.";
   document.getElementById("resetBtn").style.display="";
   applyDataset();
-  setStatus("Loaded “"+fname+"”: "+STORES.length+" stores · "+recs.length+" rows · periods "+PERIOD_LIST.join(", ")+(skipped? " · "+skipped+" row(s) skipped (missing store, period or a number)":"")+". The demo data has been replaced.", false);
+  setStatus("Loaded “"+fname+"”: "+STORES.length+" stores · "+recs.length+" rows · periods "+PERIOD_LIST.join(", ")+(skipped? " · "+skipped+" row(s) skipped (missing store or period, invalid actual, or nonpositive target)":"")+". The demo data has been replaced.", false);
 }
 function exportScorecard(){
   var head=["Store","Region","Period","Target ($)","Actual ($)","Attainment %"];

@@ -380,8 +380,8 @@
           <section class="card" aria-labelledby="ci-h">
             <h2 id="ci-h">Difference and confidence interval</h2>
             <p class="section-sub">
-              If the interval sits entirely on one side of zero, the difference is significant at the
-              chosen level.
+              For a two-sided test, an interval entirely on one side of zero indicates significance at the
+              chosen level. A one-sided test uses a different threshold.
             </p>
             <div class="chart-wrap" id="ciChart"></div>
             <p class="zero-note" id="ciNote"></p>
@@ -1092,7 +1092,7 @@
         reader.readAsText(f);
       });
       els.templateBtn.addEventListener("click", function () {
-        downloadCsv("ab-test-template.csv", "variant,visitors,conversions\nControl,10000,1200\n");
+        downloadCsv("ab-test-template.csv", "variant,visitors,conversions\nControl,10000,1200\nVariant,10000,1300\n");
       });
       els.exportBtn.addEventListener("click", function () {
         if (!lastResult) return;
