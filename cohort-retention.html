@@ -494,10 +494,10 @@
           title: "Are newer cohorts sticking better?",
           warn: diff < -0.005,
           html: diff >= 0.005
-            ? "Yes. The newest three cohorts average <b>" + fmtPct(newG) + "</b> Month-1 retention vs <b>" + fmtPct(oldG) + "</b> for the oldest three — onboarding or product changes are paying off."
+            ? "Yes. The newest three cohorts average <b>" + fmtPct(newG) + "</b> Month-1 retention vs <b>" + fmtPct(oldG) + "</b> for the oldest three — investigate what may have changed between the groups."
             : diff <= -0.005
-              ? "No — they're slipping. Newest three cohorts average <b>" + fmtPct(newG) + "</b> at Month 1 vs <b>" + fmtPct(oldG) + "</b> for the oldest three. Recent growth may be lower-intent users."
-              : "Flat. Newest cohorts average <b>" + fmtPct(newG) + "</b> at Month 1 vs <b>" + fmtPct(oldG) + "</b> for the oldest three — growth is scaling without changing who sticks."
+              ? "No — they're slipping. Newest three cohorts average <b>" + fmtPct(newG) + "</b> at Month 1 vs <b>" + fmtPct(oldG) + "</b> for the oldest three. Investigate possible changes in acquisition, onboarding, or other factors."
+              : "Flat. Newest cohorts average <b>" + fmtPct(newG) + "</b> at Month 1 vs <b>" + fmtPct(oldG) + "</b> for the oldest three — the observed rates are similar."
         });
       }
       /* 2. flattening point */
@@ -510,7 +510,7 @@
       if (flatP != null) {
         out.push({
           title: "Where the curve flattens",
-          html: "The average curve flattens around <b>Month " + flatP + "</b> — cohorts stop bleeding and settle to a loyal core of roughly <b>" + fmtPct(core) + "</b>. Users who survive to M" + flatP + " are your long-term base; getting more users past M1–M2 is the highest-leverage fix."
+          html: "The average curve changes more slowly or rises around <b>Month " + flatP + "</b>. Average retention in the latest observed period is <b>" + fmtPct(core) + "</b>; later periods may include fewer cohorts."
         });
       }
       /* 3. biggest cohort + M6 spread */
@@ -523,8 +523,8 @@
           title: "Best vs worst at Month 6",
           warn: gap6 > 0.08,
           html: gap6 > 0.08
-            ? "<b>" + esc(top.label) + "</b> holds " + fmtPct(retentionAt(top, 6)) + " at M6 while <b>" + esc(bot.label) + "</b> holds only " + fmtPct(retentionAt(bot, 6)) + ". A gap that wide usually traces to a campaign, a pricing change, or an onboarding experiment in one of those months — worth a timeline check."
-            : "<b>" + esc(top.label) + "</b> holds " + fmtPct(retentionAt(top, 6)) + " at M6 vs <b>" + fmtPct(retentionAt(bot, 6)) + "</b> for <b>" + esc(bot.label) + "</b> — only " + fmtPct(gap6) + " apart. Cohort quality is consistent: no single month is dragging retention down, so gains have to come from the product, not from fixing one bad cohort."
+            ? "<b>" + esc(top.label) + "</b> holds " + fmtPct(retentionAt(top, 6)) + " at M6 while <b>" + esc(bot.label) + "</b> holds only " + fmtPct(retentionAt(bot, 6)) + ". A gap that wide is worth investigating alongside campaigns, pricing, and onboarding changes."
+            : "<b>" + esc(top.label) + "</b> holds " + fmtPct(retentionAt(top, 6)) + " at M6 vs <b>" + fmtPct(retentionAt(bot, 6)) + "</b> for <b>" + esc(bot.label) + "</b> — only " + fmtPct(gap6) + " apart. The observed gap is small; investigate other periods and possible drivers before drawing conclusions."
         });
       }
       if (!out.length) out.push({ title: "Not enough data yet", html: "Upload cohorts with at least a few months of history and the pattern insights will appear here." });

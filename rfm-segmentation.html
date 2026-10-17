@@ -251,7 +251,7 @@
         </section>
         <section class="panel chart-box">
           <h2>Recency × Frequency</h2>
-          <p class="hint">Each dot is a customer. Bubble size = total spend. Top-left is the danger zone: frequent buyers who have gone quiet.</p>
+          <p class="hint">Each dot is a customer. Bubble size = total spend. Top-right is the danger zone: frequent buyers who have gone quiet.</p>
           <div id="scatter"></div>
           <div class="legend" id="scatterLegend"></div>
         </section>
@@ -259,7 +259,7 @@
 
       <section class="panel chart-box">
         <h2>R × F score heatmap</h2>
-        <p class="hint">Customer count in each Recency-score × Frequency-score cell. The bottom-right corner is your champion territory; the top-left is where customers drift away.</p>
+        <p class="hint">Customer count in each Recency-score × Frequency-score cell. The top-right corner is your champion territory; the bottom-left is where customers drift away.</p>
         <div class="heat" id="heatmap"></div>
       </section>
 
@@ -487,10 +487,10 @@
         var oneTimers=cs.filter(function(c){return c.orders===1;}).length;
         var hib=seg("Hibernating"), lost=seg("Lost"), newC=seg("New Customers");
         var items=[];
-        items.push({color:"#0e7a5f", html:"<b>Champions + Loyal Customers are "+fmtInt(champ.count+loyal.count)+" people ("+((champ.custShare+loyal.custShare)*100).toFixed(1)+"%) but drive "+((champ.revShare+loyal.revShare)*100).toFixed(1)+"% of revenue</b> ("+fmtMoney(champ.revenue+loyal.revenue)+"). Protect this group first — small churn here costs more than large churn anywhere else."});
-        items.push({color:"#b3352c", html:"<b>"+fmtMoney(risk.revenue+cant.revenue)+" of historical spend is going quiet</b> across "+fmtInt(risk.count+cant.count)+" At Risk / Can't Lose Them customers. A win-back campaign aimed just at this group has the highest expected return of any action on this page."});
-        items.push({color:"#d9ab3c", html:"<b>"+fmtInt(oneTimers)+" customers ("+(cs.length?(oneTimers/cs.length*100).toFixed(1):"0")+"%) bought exactly once.</b> Moving even a tenth of them to a second order adds roughly "+fmtMoney(oneTimers*0.1*(cs.length?state.totalRevenue/cs.length:0))+" at the current average customer value."});
-        items.push({color:"#2a9d8f", html:"<b>"+fmtInt(newC.count)+" new customers</b> made their first purchase recently and haven't bought again yet. The next 30 days decide whether they land in Potential Loyalists or drift to Hibernating / Lost ("+fmtInt(hib.count+lost.count)+" customers already there)."});
+        items.push({color:"#0e7a5f", html:"<b>Champions + Loyal Customers are "+fmtInt(champ.count+loyal.count)+" people ("+((champ.custShare+loyal.custShare)*100).toFixed(1)+"%) but drive "+((champ.revShare+loyal.revShare)*100).toFixed(1)+"% of revenue</b> ("+fmtMoney(champ.revenue+loyal.revenue)+"). Their revenue contribution makes this group worth monitoring and retaining."});
+        items.push({color:"#b3352c", html:"<b>"+fmtMoney(risk.revenue+cant.revenue)+" of historical spend is going quiet</b> across "+fmtInt(risk.count+cant.count)+" At Risk / Can't Lose Them customers. This group may be worth prioritizing for a win-back test."});
+        items.push({color:"#d9ab3c", html:"<b>"+fmtInt(oneTimers)+" customers ("+(cs.length?(oneTimers/cs.length*100).toFixed(1):"0")+"%) bought exactly once.</b> Consider testing an offer that encourages a second purchase."});
+        items.push({color:"#2a9d8f", html:"<b>"+fmtInt(newC.count)+" new customers</b> made their first purchase recently and haven't bought again yet. Early follow-up may help encourage a repeat purchase; Hibernating / Lost currently includes "+fmtInt(hib.count+lost.count)+" customers."});
         $("insightList").innerHTML=items.map(function(i){
           return '<li><span class="dot" style="background:'+i.color+'"></span><span>'+i.html+'</span></li>';
         }).join("");

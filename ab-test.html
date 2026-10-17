@@ -232,9 +232,9 @@
         <h1>A/B Test Significance Calculator</h1>
         <p class="lede">
           Enter the visitors and conversions for each variant. The calculator runs a two-proportion
-          z-test (Fisher's exact test when either variant has few conversions) and tells you whether
-          the difference is real, how big it is, and — if the test is
-          still inconclusive — how much more traffic you need before you can call it.
+          z-test (Fisher's exact test when either variant has few conversions) to assess
+          evidence for a difference and estimate its size. For inconclusive tests, it also
+          provides an approximate sample-size estimate.
         </p>
       </header>
 
@@ -358,9 +358,9 @@
               <div class="t-sub">for the true difference (B − A)</div>
             </div>
             <div class="tile">
-              <div class="t-label">Chance B beats A</div>
+              <div class="t-label">Normal CDF Φ(z)</div>
               <div class="t-value" id="tProb">—</div>
-              <div class="t-sub">normal approximation</div>
+              <div class="t-sub">not a probability B is better</div>
             </div>
           </div>
 
@@ -452,7 +452,7 @@
             <p>
               With enough traffic, a lift of 0.1% can be "significant" and still not worth the
               engineering cost. If the whole confidence interval clears your minimum detectable
-              effect, the win is real <em>and</em> material. Also sanity-check the traffic split:
+              effect, the data support a statistically significant and practically meaningful improvement. Also sanity-check the traffic split:
               a large imbalance you didn't design usually means broken randomization.
             </p>
           </div>
@@ -464,7 +464,7 @@
         <p>
           Method: two-proportion z-test with a pooled standard error for the p-value; the
           confidence interval uses the unpooled standard error (Wald interval, normal
-          approximation). "Chance B beats A" is Φ(z) under the same approximation. When either
+          approximation). The normal CDF Φ(z) is a test statistic transformation, not the probability that B is better. When either
           variant has fewer than 100 conversions, the p-value instead comes from Fisher's exact
           test, which stays accurate at small counts, and the results label which test was used.
           Every analysis also runs a sample-ratio-mismatch check: a chi-square goodness-of-fit
@@ -826,7 +826,7 @@
         var vClass, title, body, note = "";
         if (r.significant && r.diff > 0) {
           vClass = "good";
-          title = "Ship it — " + nameB + " wins";
+          title = nameB + " leads — statistically significant";
           body = nameB + " converts at " + fmtPct(r.pB) + " vs. " + fmtPct(r.pA) + " for " + nameA +
             " — a relative lift of " + fmtSignedRel(r.rel) + ". The difference is statistically significant at the " +
             confPct + "% level (p = " + fmtP(r.pVal) + ").";
@@ -851,9 +851,9 @@
               var perMore = Math.max(0, need - Math.round((nA + nB) / 2));
               note = "To confirm an effect of the observed size with 80% power, you'd need about " + fmtInt(need) +
                 " visitors per variant — roughly " + fmtInt(perMore) + " more per variant than the current average. " +
-                "If that's impractical, the true effect is likely smaller than your minimum worthwhile lift; consider stopping and testing a bolder change.";
+                "This estimate uses the observed effect, which is uncertain; consider a target effect and practical constraints when planning a follow-up test.";
             } else {
-              note = "The observed difference is so small that confirming it would take an impractical sample size. Treat the variants as equivalent for this metric and decide on other grounds.";
+              note = "The observed difference is small; detecting an effect of this size may require a very large sample. This result does not establish equivalence.";
             }
           } else {
             note = "The conversion rates are identical. Run longer only if you expect a difference to emerge; otherwise decide on secondary metrics or cost.";
